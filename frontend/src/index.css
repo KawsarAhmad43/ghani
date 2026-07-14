@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-green: #2d4b3e;
+  --brand-yellow: #f7b700;
+  --brand-green-hover: #1e332a;
+}
+
+@layer base {
+  body {
+    font-family: 'Hind Siliguri', sans-serif;
+  }
+}
+
+@layer utilities {
+  .bg-brand-green { background-color: var(--brand-green); }
+  .text-brand-green { color: var(--brand-green); }
+  .border-brand-green { border-color: var(--brand-green); }
+  .bg-brand-yellow { background-color: var(--brand-yellow); }
+  .text-brand-yellow { color: var(--brand-yellow); }
+  .border-brand-yellow { border-color: var(--brand-yellow); }
+  .bg-soft-yellow { background-color: #fdf8e6; }
+  .bg-soft-red { background-color: #fff1f1; }
+  .hero-banner-bg { background-color: #fefce8; }
+  .order-section-bg { background-color: var(--brand-green-hover); }
+  
+  .testimonial-container {
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+  }
+  .testimonial-container::-webkit-scrollbar {
+    display: none;
+  }
+}
