@@ -1,3 +1,5 @@
+Options -Indexes
+
 # Passenger configuration (Standard for cPanel Node.js App)
 PassengerEnabled on
 PassengerAppType node
