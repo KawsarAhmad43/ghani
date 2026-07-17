@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, Trash2, Edit } from 'lucide-react';
-import API_URL from '../../../config';
+import API_URL from '../../utils/api';
 
 export default function Coupons() {
     const [coupons, setCoupons] = useState([]);
@@ -157,7 +157,7 @@ export default function Coupons() {
                                 <td className="p-4 font-bold">{coupon.code}</td>
                                 <td className="p-4">{coupon.discount_percent}%</td>
                                 <td className="p-4">
-                                    <span className={\`px-2 py-1 text-xs font-semibold rounded-full \${coupon.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}\`}>
+                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${coupon.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                         {coupon.is_active ? 'Active' : 'Inactive'}
                                     </span>
                                 </td>
