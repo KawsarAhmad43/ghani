@@ -1,0 +1,17 @@
+# Passenger configuration (Standard for cPanel Node.js App)
+PassengerEnabled on
+PassengerAppType node
+PassengerStartupFile server.js
+
+# ----------------------------------------------------------------------
+# PORT PROXY METHOD (Alternative)
+# ----------------------------------------------------------------------
+# If your hosting uses port proxying instead of Passenger, 
+# comment out the Passenger lines above and uncomment the lines below.
+# Replace 5000 with your actual application port if different.
+#
+# RewriteEngine On
+# RewriteRule ^$ http://127.0.0.1:5000/ [P,L]
+# RewriteCond %{REQUEST_FILENAME} !-f
+# RewriteCond %{REQUEST_FILENAME} !-d
+# RewriteRule ^(.*)$ http://127.0.0.1:5000/$1 [P,L]
