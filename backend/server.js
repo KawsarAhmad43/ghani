@@ -89,13 +89,18 @@ let pool;
 
 async function setupTables(db) {
     try {
+        // Ensure Database and Tables use utf8mb4 for Bangla text support
+        try {
+            await db.query(`ALTER DATABASE \`${process.env.DB_NAME || 'ghani_db'}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+        } catch (e) { }
+
         // Initialize Database Tables
         await db.query(`
             CREATE TABLE IF NOT EXISTS settings (
                 id INT AUTO_INCREMENT PRIMARY KEY, 
                 \`key\` VARCHAR(255) UNIQUE, 
                 value TEXT
-            )
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
         await db.query(`INSERT IGNORE INTO settings (\`key\`, value) VALUES ('store_mode', 'single')`);
 
@@ -104,8 +109,16 @@ async function setupTables(db) {
                 id INT AUTO_INCREMENT PRIMARY KEY, 
                 name VARCHAR(255), 
                 slug VARCHAR(255)
-            )
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         `);
+
+        // Convert existing tables to utf8mb4 if they were created with latin1
+        const tablesToFix = ['categories', 'products', 'settings', 'product_variants', 'product_attributes', 'orders', 'order_items', 'reviews', 'website_content', 'coupons', 'users', 'user_addresses', 'otps', 'banners'];
+        for (const t of tablesToFix) {
+            try {
+                await db.query(`ALTER TABLE \`${t}\` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+            } catch (e) { }
+        }
 
         await db.query(`
             CREATE TABLE IF NOT EXISTS products (
@@ -630,7 +643,8 @@ async function initDb() {
             port: parseInt(process.env.DB_PORT || '3306'),
             waitForConnections: true,
             connectionLimit: 15,
-            queueLimit: 0
+            queueLimit: 0,
+            charset: 'utf8mb4'
         });
 
         const connection = await pool.getConnection();
