@@ -1877,7 +1877,7 @@ app.post('/api/tracking/server-event', async (req, res) => {
 
         if (config.pixel_id && config.capi_token) {
             let normalizedPhone = null;
-            if (user_data?.phone) {
+            if (user_data && user_data.phone) {
                 let cleanPhone = user_data.phone.trim().replace(/[^\d]/g, '');
                 if (cleanPhone.length > 11) {
                     if (cleanPhone.startsWith('880')) {
@@ -1891,7 +1891,7 @@ app.post('/api/tracking/server-event', async (req, res) => {
 
             // Hashed first name for extra match quality
             let hashedFirstName = null;
-            if (user_data?.name) {
+            if (user_data && user_data.name) {
                 const parts = user_data.name.trim().split(/\s+/);
                 const first = parts[0].toLowerCase();
                 hashedFirstName = require('crypto').createHash('sha256').update(first).digest('hex');
@@ -1899,7 +1899,7 @@ app.post('/api/tracking/server-event', async (req, res) => {
 
             // Hashed city for extra match quality
             let hashedCity = null;
-            if (user_data?.address) {
+            if (user_data && user_data.address) {
                 const addr = user_data.address.toLowerCase();
                 let city = 'other';
                 const cities = ['dhaka', 'chittagong', 'chattogram', 'sylhet', 'rajshahi', 'khulna', 'barisal', 'barishal', 'rangpur', 'mymensingh'];
@@ -1922,18 +1922,18 @@ app.post('/api/tracking/server-event', async (req, res) => {
                     user_data: {
                         client_ip_address: getClientIp(req),
                         client_user_agent: req.headers['user-agent'] || '',
-                        em: user_data?.email?.trim() && !user_data.email.trim().endsWith('@ghani.com') ? require('crypto').createHash('sha256').update(user_data.email.trim().toLowerCase()).digest('hex') : null,
+                        em: (user_data && user_data.email && user_data.email.trim() && !user_data.email.trim().endsWith('@ghani.com')) ? require('crypto').createHash('sha256').update(user_data.email.trim().toLowerCase()).digest('hex') : null,
                         ph: normalizedPhone,
                         fn: hashedFirstName,
                         ct: hashedCity,
-                        fbp: user_data?.fbp || null,
-                        fbc: user_data?.fbc || null
+                        fbp: (user_data && user_data.fbp) || null,
+                        fbc: (user_data && user_data.fbc) || null
                     },
                     custom_data: {
-                        value: event_data?.value || null,
-                        currency: event_data?.currency || 'BDT',
-                        content_name: event_data?.content_name || null,
-                        content_ids: event_data?.content_ids || []
+                        value: (event_data && event_data.value) || null,
+                        currency: (event_data && event_data.currency) || 'BDT',
+                        content_name: (event_data && event_data.content_name) || null,
+                        content_ids: (event_data && event_data.content_ids) || []
                     }
                 }]
             };
