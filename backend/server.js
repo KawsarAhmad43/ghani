@@ -1,3 +1,4 @@
+const passengerPort = process.env.PORT;
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -10,7 +11,7 @@ const sharp = require('sharp');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = passengerPort || process.env.PORT || 5000;
 
 // Auth Middleware
 function requireAdmin(req, res, next) {
@@ -2785,3 +2786,5 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}.`);
 });
+
+module.exports = app;
