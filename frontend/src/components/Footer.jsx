@@ -16,6 +16,7 @@ export default function Footer() {
     store_address: 'ঢাকা, বাংলাদেশ',
     social_facebook: 'https://facebook.com/'
   });
+  const [quicklinks, setQuicklinks] = useState([]);
 
   useEffect(() => {
     axios.get(`${API_URL}/api/settings`)
@@ -24,6 +25,10 @@ export default function Footer() {
           setSettings(prev => ({ ...prev, ...res.data }));
         }
       })
+      .catch(console.error);
+
+    axios.get(`${API_URL}/api/quicklinks`)
+      .then(res => setQuicklinks(res.data))
       .catch(console.error);
   }, []);
 
@@ -147,6 +152,11 @@ export default function Footer() {
             <p className="text-sm text-gray-300 leading-relaxed">
               {settings.store_description}
             </p>
+            {settings.trade_license && (
+              <p className="text-xs text-brand-yellow mt-3 font-semibold bg-black/20 p-2 rounded inline-block">
+                Trade License: {settings.trade_license}
+              </p>
+            )}
           </div>
           <div>
             <h4 className="text-lg font-bold mb-4 border-l-4 border-brand-yellow pl-3">দ্রুত লিঙ্ক</h4>
@@ -156,6 +166,11 @@ export default function Footer() {
               <li className="hover:text-brand-yellow"><Link to="/#why-oil">কেন আমাদের তেল?</Link></li>
               <li className="hover:text-brand-yellow"><Link to="/#testimonials">গ্রাহকের মতামত</Link></li>
               <li className="hover:text-brand-yellow"><Link to="/#order">যোগাযোগ</Link></li>
+              {quicklinks.map((ql) => (
+                <li key={ql.id} className="hover:text-brand-yellow">
+                  <a href={ql.url} target={ql.url.startsWith('http') || ql.is_pdf ? '_blank' : '_self'} rel="noreferrer">{ql.title}</a>
+                </li>
+              ))}
             </ul>
           </div>
           <div>
@@ -208,7 +223,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="border-t border-white/10 mt-12 pt-8 text-center text-xs text-gray-400">
-          <p>© ২০২৪ খাঁটি তেল - সর্বস্বত্ব সংরক্ষিত।</p>
+          <p>© {new Date().getFullYear()} {settings.site_title || settings.store_name || 'Ghani'} - সর্বস্বত্ব সংরক্ষিত।</p>
         </div>
       </div>
     </footer>

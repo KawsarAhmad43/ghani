@@ -26,7 +26,7 @@ export default function WebsiteManagement() {
 
   // Data State
   const [data, setData] = useState({
-    about_main: { id: null, title: '', description: '' },
+    about_main: { id: null, title: '', description: '', image: '' },
     about_feature: [],
     why_choose_reason: [],
     self_branding_point: [],
@@ -139,13 +139,42 @@ export default function WebsiteManagement() {
     }
   };
 
+  const handleAboutMainImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const token = localStorage.getItem('admin_token');
+      const res = await axios.post(`${API_URL}/api/admin/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setData(prev => ({ 
+        ...prev, 
+        about_main: { ...prev.about_main, image: res.data.url } 
+      }));
+      toast.success('About Us image uploaded successfully!');
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      toast.error('Failed to upload image.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleSaveAboutMain = async () => {
     try {
       const token = localStorage.getItem('admin_token');
       const res = await axios.post(`${API_URL}/api/admin/website-content`, {
         type: 'about_main',
         title: data.about_main.title,
-        description: data.about_main.description
+        description: data.about_main.description,
+        image: data.about_main.image
       }, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -251,6 +280,20 @@ export default function WebsiteManagement() {
                     value={data.about_main.description}
                     onChange={e => setData({ ...data, about_main: { ...data.about_main, description: e.target.value } })}
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">About Us Image</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAboutMainImageUpload}
+                    className="w-full text-sm mb-2"
+                  />
+                  <p className="text-xs text-gray-400 mb-2">Recommended ratio 1:1 or 4:3 (e.g. 600x600 px)</p>
+                  {uploading && <span className="text-blue-500 text-xs font-bold">Uploading...</span>}
+                  {data.about_main.image && (
+                    <img src={data.about_main.image} alt="About Us" className="h-32 object-contain rounded border p-1" />
+                  )}
                 </div>
                 <div className="flex justify-end">
                   <button onClick={handleSaveAboutMain} className="flex items-center gap-2 bg-[#2d4b3e] text-white px-5 py-2 rounded-lg font-bold hover:opacity-90 transition shadow-sm">

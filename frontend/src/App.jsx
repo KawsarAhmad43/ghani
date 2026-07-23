@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import API_URL from './utils/api';
@@ -27,6 +27,7 @@ import Coupons from './pages/admin/Coupons';
 import CustomerLogin from './pages/customer/CustomerLogin';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 import { initTracker } from './utils/tracker';
+import { Helmet } from 'react-helmet';
 
 const darkenColor = (hex, percent) => {
   if (!hex || hex[0] !== '#') return hex || '#2d4b3e';
@@ -70,6 +71,8 @@ function ScrollToHash() {
 }
 
 function App() {
+  const [globalSettings, setGlobalSettings] = useState(null);
+
   useEffect(() => {
     // Parse URL params for UTMs and fbclid
     try {
@@ -112,6 +115,7 @@ function App() {
               --theme-gradient: ${gradient};
             }
           `;
+          setGlobalSettings(res.data);
         }
       })
       .catch(console.error);
@@ -120,6 +124,19 @@ function App() {
   return (
     <Router>
       <ScrollToHash />
+      {globalSettings && (
+        <Helmet>
+          <title>{globalSettings.site_title || globalSettings.store_name || 'Ghani'}</title>
+          <meta name="description" content={globalSettings.store_description || 'Ghani Mustard Oil'} />
+          {globalSettings.favicon && <link rel="icon" href={globalSettings.favicon} />}
+          <meta property="og:title" content={globalSettings.site_title || globalSettings.store_name || 'Ghani'} />
+          <meta property="og:description" content={globalSettings.store_description || 'Ghani Mustard Oil'} />
+          {globalSettings.site_logo && <meta property="og:image" content={globalSettings.site_logo} />}
+          {globalSettings.site_logo && <meta property="og:image:secure_url" content={globalSettings.site_logo} />}
+          <meta property="og:type" content="website" />
+          <meta property="og:url" content={window.location.href} />
+        </Helmet>
+      )}
       <Routes>
         <Route path="/" element={<StoreFront />} />
         <Route path="/products" element={<MultiProductCatalog />} />

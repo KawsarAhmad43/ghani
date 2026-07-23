@@ -217,9 +217,16 @@ export default function Checkout() {
         code: couponCodeInput,
         cart_items: cart
       });
+      let parsedEligible = [];
+      try {
+        parsedEligible = res.data.coupon.eligible_products ? (typeof res.data.coupon.eligible_products === 'string' ? JSON.parse(res.data.coupon.eligible_products) : res.data.coupon.eligible_products) : [];
+      } catch(e) {}
+      
       setAppliedCoupon({
-        code: res.data.code,
-        discount_percent: res.data.discount_percent
+        code: res.data.coupon.code,
+        discount_percent: res.data.coupon.discount_percent,
+        valid_for_all: res.data.coupon.valid_for_all,
+        eligible_products: parsedEligible
       });
       toast.success('কুপন সফলভাবে যুক্ত হয়েছে!');
     } catch (err) {
@@ -240,7 +247,16 @@ export default function Checkout() {
       
   let couponDiscount = 0;
   if (appliedCoupon) {
-      couponDiscount = Math.floor(cartTotal * (appliedCoupon.discount_percent / 100));
+      if (appliedCoupon.valid_for_all) {
+          couponDiscount = Math.floor(cartTotal * (appliedCoupon.discount_percent / 100));
+      } else {
+          const eligibleTotal = cart.reduce((sum, item) => {
+              return appliedCoupon.eligible_products.includes(item.id) 
+                  ? sum + (item.price * item.quantity) 
+                  : sum;
+          }, 0);
+          couponDiscount = Math.floor(eligibleTotal * (appliedCoupon.discount_percent / 100));
+      }
   }
   
   let pointsDiscount = 0;
