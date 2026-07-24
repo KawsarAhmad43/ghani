@@ -306,7 +306,10 @@ export default function SingleProductLanding() {
     const bannerSubtitle = banner.subtitle || '১০০% খাঁটি ঘানিতে ভাঙানো';
     const bannerDesc = banner.description || product?.description || 'ভেজালমুক্ত, প্রাকৃতিক ও স্বাস্থ্যকর তেল আপনার পরিবারের সুস্থতার জন্য সেরা পছন্দ।';
     const btnText = banner.button_text || 'এখনই অর্ডার করুন';
-    const btnLink = banner.button_link || '#order';
+    let btnLink = banner.button_link || '#order';
+    if (banner.product_id) {
+      btnLink = `/product/${banner.product_id}`;
+    }
 
     return (
       <div className="flex flex-col md:flex-row items-center gap-8 md:gap-16 w-full animate-fade-in">
@@ -344,7 +347,17 @@ export default function SingleProductLanding() {
             </div>
           </div>
           <div className="flex flex-col items-center md:items-start gap-4">
-            {btnLink.startsWith('#') || !btnLink ? (
+            {btnLink.startsWith('/') || btnLink.startsWith('http') ? (
+              <a
+                href={btnLink}
+                className="bg-brand-green hover:opacity-90 text-white text-lg md:text-xl font-bold py-3 md:py-4 px-10 rounded-lg flex items-center gap-3 transition shadow-lg"
+              >
+                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
+                </svg>
+                {btnText}
+              </a>
+            ) : (
               <button
                 onClick={(e) => {
                   e.preventDefault();
@@ -358,16 +371,6 @@ export default function SingleProductLanding() {
                 </svg>
                 {btnText}
               </button>
-            ) : (
-              <a
-                href={btnLink}
-                className="bg-brand-green hover:opacity-90 text-white text-lg md:text-xl font-bold py-3 md:py-4 px-10 rounded-lg flex items-center gap-3 transition shadow-lg"
-              >
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                </svg>
-                {btnText}
-              </a>
             )}
             <p className="text-sm text-gray-600 font-medium">সারা দেশে হোম ডেলিভারি | ক্যাশ অন ডেলিভারি</p>
           </div>
@@ -685,6 +688,7 @@ export default function SingleProductLanding() {
 
   const isMultiMode = settings.store_mode?.toLowerCase() === 'multi' || settings.store_mode === 'Multi Product';
   const latest8Products = [...products]
+    .filter(p => p.variant_count === 1) // Issue 8 requirement
     .sort((a, b) => b.id - a.id)
     .slice(0, 8);
 
@@ -752,7 +756,7 @@ export default function SingleProductLanding() {
               </ul>
             </div>
             <div className="md:w-1/2">
-              <img alt="Traditional Pressing" className="rounded-2xl shadow-xl w-4/5" src="/assets/img/oil.png" />
+              <img alt="Traditional Pressing" className="rounded-2xl shadow-xl w-4/5" src={webContent.about_main.image || '/assets/img/oil.png'} />
             </div>
           </div>
         </section>

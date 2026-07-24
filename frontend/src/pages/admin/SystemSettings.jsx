@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Save, Settings, Share2, Truck, Bell, Trash2, Gift } from 'lucide-react';
+import { Save, Settings, Share2, Truck, Bell, Trash2, Gift, Link } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import API_URL from '../../utils/api';
+import QuicklinksManagement from './QuicklinksManagement';
 
 export default function SystemSettings() {
   const toast = useToast();
@@ -112,12 +113,50 @@ export default function SystemSettings() {
     }
   };
 
+  const handleFileUploadPdf = async (e, field) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const data = new FormData();
+    data.append('file', file);
+    setUploading(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/admin/upload-file`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setSettings({...settings, [field]: res.data.url});
+      toast.success('File uploaded successfully');
+    } catch (err) {
+      toast.error('File upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFaviconUpload = async (e) => {
+    const file = e.target.files[0];
+    if(!file) return;
+    const data = new FormData();
+    data.append('image', file);
+    setUploading(true);
+    try {
+      const res = await axios.post(`${API_URL}/api/admin/upload`, data, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setSettings({...settings, favicon: res.data.url});
+    } catch (err) {
+      toast.error('Favicon upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const tabs = [
     { id: 'general', label: 'General', icon: Settings },
     { id: 'delivery', label: 'Delivery & Advance Pay', icon: Truck },
     { id: 'social', label: 'Social & WhatsApp', icon: Share2 },
     { id: 'smtp', label: 'SMTP Server', icon: Bell },
-    { id: 'loyalty', label: 'Loyalty Points', icon: Gift }
+    { id: 'loyalty', label: 'Loyalty Points', icon: Gift },
+    { id: 'quicklinks', label: 'Quicklinks', icon: Link }
   ];
 
   return (
@@ -182,12 +221,22 @@ export default function SystemSettings() {
               
               <div className="grid grid-cols-2 gap-6">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Site Logo</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Site Logo <span className="text-xs text-gray-500 font-normal">(Recommended Size: 250x60)</span></label>
                   <div className="flex items-center gap-4">
                     {settings.site_logo && <img src={settings.site_logo} alt="Logo" className="h-12 rounded border p-1 bg-gray-50" />}
                     <div>
                       <input type="file" accept="image/*" onChange={handleFileUpload} className="text-sm border p-1 rounded" />
                       {uploading && <span className="text-xs text-blue-500 ml-2">Uploading...</span>}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Favicon <span className="text-xs text-gray-500 font-normal">(Recommended Size: 32x32 or 64x64)</span></label>
+                  <div className="flex items-center gap-4">
+                    {settings.favicon && <img src={settings.favicon} alt="Favicon" className="h-8 rounded border p-1 bg-gray-50" />}
+                    <div>
+                      <input type="file" accept="image/*" onChange={handleFaviconUpload} className="text-sm border p-1 rounded" />
                     </div>
                   </div>
                 </div>
@@ -210,6 +259,11 @@ export default function SystemSettings() {
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Store Address (দোকানের ঠিকানা)</label>
                   <input type="text" className="w-full border rounded-lg p-2" value={settings.store_address || ''} onChange={e=>setSettings({...settings, store_address: e.target.value})} />
+                </div>
+                
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Trade License Number (ট্রেড লাইসেন্স)</label>
+                  <input type="text" className="w-full border rounded-lg p-2" value={settings.trade_license || ''} onChange={e=>setSettings({...settings, trade_license: e.target.value})} placeholder="e.g. TRAD/DNCC/000000/2026" />
                 </div>
                 
                 <div>
@@ -635,6 +689,10 @@ export default function SystemSettings() {
                 </div>
               </div>
             </div>
+          )}
+
+          {activeTab === 'quicklinks' && (
+            <QuicklinksManagement />
           )}
         </div>
       </div>

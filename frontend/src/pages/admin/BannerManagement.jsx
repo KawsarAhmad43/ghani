@@ -11,8 +11,9 @@ export default function BannerManagement() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingBanner, setEditingBanner] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [products, setProducts] = useState([]);
   const [newBanner, setNewBanner] = useState({
-    title: '', subtitle: '', description: '', button_text: '', button_link: '', image: '', sort_order: 0, status: 1
+    title: '', subtitle: '', description: '', button_text: '', button_link: '', image: '', sort_order: 0, status: 1, product_id: null
   });
 
   useEffect(() => {
@@ -21,14 +22,17 @@ export default function BannerManagement() {
 
   const fetchData = async () => {
     try {
-      const [bannerRes, settingsRes] = await Promise.all([
+      const token = localStorage.getItem('admin_token');
+      const [bannerRes, settingsRes, productRes] = await Promise.all([
         axios.get(`${API_URL}/api/admin/banners`),
-        axios.get(`${API_URL}/api/admin/settings`)
+        axios.get(`${API_URL}/api/admin/settings`),
+        axios.get(`${API_URL}/api/products`)
       ]);
       setBanners(bannerRes.data);
       if (settingsRes.data.hero_mode) {
         setHeroMode(settingsRes.data.hero_mode);
       }
+      setProducts(productRes.data);
     } catch (err) {
       console.error(err);
     }
@@ -69,7 +73,7 @@ export default function BannerManagement() {
     try {
       await axios.post(`${API_URL}/api/admin/banners`, newBanner);
       setIsAdding(false);
-      setNewBanner({ title: '', subtitle: '', description: '', button_text: '', button_link: '', image: '', sort_order: 0, status: 1 });
+      setNewBanner({ title: '', subtitle: '', description: '', button_text: '', button_link: '', image: '', sort_order: 0, status: 1, product_id: null });
       fetchData();
     } catch (err) {
       toast.error("Failed to add banner");
@@ -151,14 +155,49 @@ export default function BannerManagement() {
                 <label className="block text-xs font-bold mb-1">Description</label>
                 <textarea className="w-full border rounded p-2 text-sm" rows="2" value={newBanner.description} onChange={e=>setNewBanner({...newBanner, description: e.target.value})}/>
               </div>
-              <div>
-                <label className="block text-xs font-bold mb-1">Button Text</label>
-                <input type="text" className="w-full border rounded p-2 text-sm" value={newBanner.button_text} onChange={e=>setNewBanner({...newBanner, button_text: e.target.value})}/>
+              <div className="col-span-2">
+                <label className="block text-xs font-bold mb-1">Link Type</label>
+                <select 
+                  className="w-full border rounded p-2 text-sm bg-white" 
+                  value={newBanner.product_id ? 'product' : 'custom'} 
+                  onChange={e => {
+                    if (e.target.value === 'custom') {
+                      setNewBanner({...newBanner, product_id: null});
+                    } else {
+                      setNewBanner({...newBanner, product_id: products[0]?.id || null, button_link: ''});
+                    }
+                  }}
+                >
+                  <option value="custom">Custom Link (As Usual)</option>
+                  <option value="product">Link an Existing Product</option>
+                </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold mb-1">Button Link</label>
-                <input type="text" className="w-full border rounded p-2 text-sm" value={newBanner.button_link} onChange={e=>setNewBanner({...newBanner, button_link: e.target.value})}/>
-              </div>
+
+              {newBanner.product_id !== null ? (
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold mb-1">Select Product</label>
+                  <select 
+                    className="w-full border rounded p-2 text-sm bg-white" 
+                    value={newBanner.product_id || ''} 
+                    onChange={e => setNewBanner({...newBanner, product_id: Number(e.target.value)})}
+                  >
+                    {products.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold mb-1">Button Text</label>
+                    <input type="text" className="w-full border rounded p-2 text-sm" value={newBanner.button_text} onChange={e=>setNewBanner({...newBanner, button_text: e.target.value})}/>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1">Button Link</label>
+                    <input type="text" className="w-full border rounded p-2 text-sm" value={newBanner.button_link} onChange={e=>setNewBanner({...newBanner, button_link: e.target.value})}/>
+                  </div>
+                </>
+              )}
               <div>
                 <label className="block text-xs font-bold mb-1">Sort Order</label>
                 <input type="number" className="w-full border rounded p-2 text-sm" value={newBanner.sort_order} onChange={e=>setNewBanner({...newBanner, sort_order: Number(e.target.value)})}/>
@@ -205,14 +244,49 @@ export default function BannerManagement() {
                 <label className="block text-xs font-bold mb-1">Description</label>
                 <textarea className="w-full border rounded p-2 text-sm" rows="2" value={editingBanner.description} onChange={e=>setEditingBanner({...editingBanner, description: e.target.value})}/>
               </div>
-              <div>
-                <label className="block text-xs font-bold mb-1">Button Text</label>
-                <input type="text" className="w-full border rounded p-2 text-sm" value={editingBanner.button_text} onChange={e=>setEditingBanner({...editingBanner, button_text: e.target.value})}/>
+              <div className="col-span-2">
+                <label className="block text-xs font-bold mb-1">Link Type</label>
+                <select 
+                  className="w-full border rounded p-2 text-sm bg-white" 
+                  value={editingBanner.product_id ? 'product' : 'custom'} 
+                  onChange={e => {
+                    if (e.target.value === 'custom') {
+                      setEditingBanner({...editingBanner, product_id: null});
+                    } else {
+                      setEditingBanner({...editingBanner, product_id: products[0]?.id || null, button_link: ''});
+                    }
+                  }}
+                >
+                  <option value="custom">Custom Link (As Usual)</option>
+                  <option value="product">Link an Existing Product</option>
+                </select>
               </div>
-              <div>
-                <label className="block text-xs font-bold mb-1">Button Link</label>
-                <input type="text" className="w-full border rounded p-2 text-sm" value={editingBanner.button_link} onChange={e=>setEditingBanner({...editingBanner, button_link: e.target.value})}/>
-              </div>
+
+              {editingBanner.product_id !== null ? (
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold mb-1">Select Product</label>
+                  <select 
+                    className="w-full border rounded p-2 text-sm bg-white" 
+                    value={editingBanner.product_id || ''} 
+                    onChange={e => setEditingBanner({...editingBanner, product_id: Number(e.target.value)})}
+                  >
+                    {products.map(p => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold mb-1">Button Text</label>
+                    <input type="text" className="w-full border rounded p-2 text-sm" value={editingBanner.button_text} onChange={e=>setEditingBanner({...editingBanner, button_text: e.target.value})}/>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold mb-1">Button Link</label>
+                    <input type="text" className="w-full border rounded p-2 text-sm" value={editingBanner.button_link} onChange={e=>setEditingBanner({...editingBanner, button_link: e.target.value})}/>
+                  </div>
+                </>
+              )}
               <div>
                 <label className="block text-xs font-bold mb-1">Sort Order</label>
                 <input type="number" className="w-full border rounded p-2 text-sm" value={editingBanner.sort_order} onChange={e=>setEditingBanner({...editingBanner, sort_order: Number(e.target.value)})}/>

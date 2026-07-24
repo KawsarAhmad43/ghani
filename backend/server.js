@@ -85,6 +85,21 @@ app.post('/api/admin/upload', upload.single('image'), async (req, res) => {
     }
 });
 
+app.post('/api/admin/upload-file', upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    try {
+        const ext = path.extname(req.file.originalname) || '.pdf';
+        const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+        const filepath = path.join(__dirname, 'uploads', filename);
+
+        fs.writeFileSync(filepath, req.file.buffer);
+
+        res.json({ url: `${process.env.VITE_API_URL || `http://localhost:${PORT}`}/uploads/${filename}` });
+    } catch (err) {
+        res.status(500).json({ error: 'File upload failed', details: err.message });
+    }
+});
+
 // Database Connection Wrapper Configuration
 let pool;
 
@@ -233,6 +248,7 @@ async function setupTables(db) {
                 description TEXT, 
                 button_text VARCHAR(255), 
                 button_link VARCHAR(255), 
+                product_id INT DEFAULT NULL,
                 status INT DEFAULT 1, 
                 sort_order INT DEFAULT 0
             )
@@ -300,6 +316,16 @@ async function setupTables(db) {
             )
         `);
 
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS quicklinks (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                url TEXT NOT NULL,
+                is_pdf BOOLEAN DEFAULT FALSE,
+                status INT DEFAULT 1,
+                sort_order INT DEFAULT 0
+            )
+        `);
 
         await db.query(`
             CREATE TABLE IF NOT EXISTS otps (
@@ -340,6 +366,11 @@ async function setupTables(db) {
         // Alter tables
         try {
             await db.query('ALTER TABLE banners ADD COLUMN subtitle VARCHAR(255)');
+        } catch (err) {
+            // ignore
+        }
+        try {
+            await db.query('ALTER TABLE banners ADD COLUMN product_id INT DEFAULT NULL');
         } catch (err) {
             // ignore
         }
@@ -654,7 +685,7 @@ async function initDb() {
 
         await setupTables(pool);
     } catch (err) {
-        console.error('CRITICAL: MySQL initialization failed:', err.message);
+        console.error('CRITICAL: MySQL initialization failed:', err);
         process.exit(1);
     }
 }
@@ -865,7 +896,8 @@ app.get('/api/products', async (req, res) => {
         const [rows] = await pool.query(`
             SELECT p.*, 
                    COALESCE(r.rating_count, 0) as rating_count, 
-                   COALESCE(ROUND(r.rating_avg, 1), 5.0) as rating_avg 
+                   COALESCE(ROUND(r.rating_avg, 1), 5.0) as rating_avg,
+                   COALESCE(v.variant_count, 0) as variant_count
             FROM products p 
             LEFT JOIN (
                 SELECT product_id, COUNT(*) as rating_count, AVG(rating) as rating_avg 
@@ -873,6 +905,11 @@ app.get('/api/products', async (req, res) => {
                 WHERE status = 'approved' 
                 GROUP BY product_id
             ) r ON p.id = r.product_id
+            LEFT JOIN (
+                SELECT product_id, COUNT(*) as variant_count 
+                FROM product_variants 
+                GROUP BY product_id
+            ) v ON p.id = v.product_id
         `);
         res.json(rows);
     } catch (err) {
@@ -1727,11 +1764,11 @@ app.get('/api/admin/banners', async (req, res) => {
 });
 
 app.post('/api/admin/banners', async (req, res) => {
-    const { image, title, subtitle, description, button_text, button_link, status, sort_order } = req.body;
+    const { image, title, subtitle, description, button_text, button_link, product_id, status, sort_order } = req.body;
     try {
         const [result] = await pool.query(
-            'INSERT INTO banners (image, title, subtitle, description, button_text, button_link, status, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [image, title, subtitle || '', description, button_text, button_link, status || 1, sort_order || 0]
+            'INSERT INTO banners (image, title, subtitle, description, button_text, button_link, product_id, status, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [image, title, subtitle || '', description, button_text, button_link, product_id || null, status || 1, sort_order || 0]
         );
         res.json({ id: result.insertId, message: 'Banner added' });
     } catch (err) {
@@ -1740,11 +1777,11 @@ app.post('/api/admin/banners', async (req, res) => {
 });
 
 app.put('/api/admin/banners/:id', async (req, res) => {
-    const { image, title, subtitle, description, button_text, button_link, status, sort_order } = req.body;
+    const { image, title, subtitle, description, button_text, button_link, product_id, status, sort_order } = req.body;
     try {
         await pool.query(
-            'UPDATE banners SET image = ?, title = ?, subtitle = ?, description = ?, button_text = ?, button_link = ?, status = ?, sort_order = ? WHERE id = ?',
-            [image, title, subtitle || '', description, button_text, button_link, status, sort_order || 0, req.params.id]
+            'UPDATE banners SET image = ?, title = ?, subtitle = ?, description = ?, button_text = ?, button_link = ?, product_id = ?, status = ?, sort_order = ? WHERE id = ?',
+            [image, title, subtitle || '', description, button_text, button_link, product_id || null, status, sort_order || 0, req.params.id]
         );
         res.json({ message: 'Banner updated' });
     } catch (err) {
@@ -2773,6 +2810,134 @@ app.get('/api/admin/analytics/insights', async (req, res) => {
             valuableCustomers: customersRes,
             regionBreakdown
         });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+// --- Quicklinks API ---
+app.get('/api/quicklinks', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM quicklinks WHERE status = 1 ORDER BY sort_order ASC, id DESC');
+        res.json(rows);
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.get('/api/admin/quicklinks', requireAdmin, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM quicklinks ORDER BY sort_order ASC, id DESC');
+        res.json(rows);
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.post('/api/admin/quicklinks', requireAdmin, async (req, res) => {
+    const { title, url, is_pdf, status, sort_order } = req.body;
+    try {
+        const [result] = await pool.query(
+            'INSERT INTO quicklinks (title, url, is_pdf, status, sort_order) VALUES (?, ?, ?, ?, ?)',
+            [title, url, is_pdf ? 1 : 0, status !== undefined ? status : 1, sort_order || 0]
+        );
+        res.json({ success: true, message: 'Quicklink added', id: result.insertId });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.put('/api/admin/quicklinks/:id', requireAdmin, async (req, res) => {
+    const { title, url, is_pdf, status, sort_order } = req.body;
+    try {
+        await pool.query(
+            'UPDATE quicklinks SET title=?, url=?, is_pdf=?, status=?, sort_order=? WHERE id=?',
+            [title, url, is_pdf ? 1 : 0, status, sort_order || 0, req.params.id]
+        );
+        res.json({ success: true, message: 'Quicklink updated' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.delete('/api/admin/quicklinks/:id', requireAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM quicklinks WHERE id=?', [req.params.id]);
+        res.json({ success: true, message: 'Quicklink deleted' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+// --- Coupons API ---
+app.get('/api/admin/coupons', requireAdmin, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM coupons ORDER BY id DESC');
+        res.json(rows);
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.post('/api/admin/coupons', requireAdmin, async (req, res) => {
+    const { code, discount_percent, valid_for_all, expiry_date, is_active, eligible_products } = req.body;
+    try {
+        const query = 'INSERT INTO coupons (code, discount_percent, valid_for_all, expiry_date, is_active, eligible_products) VALUES (?, ?, ?, ?, ?, ?)';
+        const [result] = await pool.query(query, [
+            code, 
+            discount_percent, 
+            valid_for_all ? 1 : 0, 
+            expiry_date || null, 
+            is_active ? 1 : 0, 
+            JSON.stringify(eligible_products || [])
+        ]);
+        res.json({ success: true, message: 'Coupon created successfully', id: result.insertId });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.put('/api/admin/coupons/:id', requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { code, discount_percent, valid_for_all, expiry_date, is_active, eligible_products } = req.body;
+    try {
+        const query = 'UPDATE coupons SET code=?, discount_percent=?, valid_for_all=?, expiry_date=?, is_active=?, eligible_products=? WHERE id=?';
+        await pool.query(query, [
+            code, 
+            discount_percent, 
+            valid_for_all ? 1 : 0, 
+            expiry_date || null, 
+            is_active ? 1 : 0, 
+            JSON.stringify(eligible_products || []), 
+            id
+        ]);
+        res.json({ success: true, message: 'Coupon updated successfully' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.delete('/api/admin/coupons/:id', requireAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM coupons WHERE id=?', [req.params.id]);
+        res.json({ success: true, message: 'Coupon deleted successfully' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.post('/api/coupons/validate', async (req, res) => {
+    const { code } = req.body;
+    try {
+        const [rows] = await pool.query('SELECT * FROM coupons WHERE code = ? AND is_active = 1', [code]);
+        if (rows.length === 0) {
+            return res.status(400).json({ error: 'Invalid or inactive coupon code' });
+        }
+        const coupon = rows[0];
+        if (coupon.expiry_date && new Date(coupon.expiry_date) < new Date()) {
+            return res.status(400).json({ error: 'This coupon has expired' });
+        }
+        res.json({ success: true, coupon });
     } catch (err) {
         handleServerError(res, err);
     }
