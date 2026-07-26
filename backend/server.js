@@ -1842,7 +1842,13 @@ app.delete('/api/admin/products/:id', async (req, res) => {
 // --- Banners ---
 app.get('/api/banners', async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT * FROM banners WHERE status = 1 ORDER BY sort_order ASC');
+        const [rows] = await pool.query(`
+            SELECT b.*, p.slug as product_slug 
+            FROM banners b 
+            LEFT JOIN products p ON b.product_id = p.id 
+            WHERE b.status = 1 
+            ORDER BY b.sort_order ASC
+        `);
         res.json(rows);
     } catch (err) {
         handleServerError(res, err);

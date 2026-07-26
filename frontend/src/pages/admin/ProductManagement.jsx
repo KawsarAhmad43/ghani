@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Search, Edit, Trash2, Download, Image as ImageIcon, Upload, X } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Download, Image as ImageIcon, Upload, X, Share2 } from 'lucide-react';
 import ReactQuill from 'react-quill-new';
 import 'react-quill-new/dist/quill.snow.css';
 import API_URL from '../../utils/api';
@@ -700,6 +700,10 @@ export default function ProductManagement() {
                     {categories.find(c => c.id === product.category_id)?.name || <span className="text-gray-400 italic">No Category</span>}
                   </td>
                   <td className="p-4 flex gap-2 items-center justify-end">
+                    <button onClick={() => {
+                        const shareUrl = `${API_URL}/api/share/product/${product.slug || product.id}`;
+                        navigator.clipboard.writeText(shareUrl).then(() => toast?.success ? toast.success('Share Link Copied!') : alert('Share Link Copied!'));
+                    }} className="p-2 text-green-600 hover:bg-green-50 rounded" title="Copy Share Link"><Share2 size={16} /></button>
                     <button onClick={() => handleEditClick(product)} className="p-2 text-blue-600 hover:bg-blue-50 rounded" title="Edit"><Edit size={16} /></button>
                     <button className="p-2 text-red-600 hover:bg-red-50 rounded" title="Delete" onClick={() => {
                       if (window.confirm('Delete this product?')) {

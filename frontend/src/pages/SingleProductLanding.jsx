@@ -307,7 +307,9 @@ export default function SingleProductLanding() {
     const bannerDesc = banner.description || product?.description || 'ভেজালমুক্ত, প্রাকৃতিক ও স্বাস্থ্যকর তেল আপনার পরিবারের সুস্থতার জন্য সেরা পছন্দ।';
     const btnText = banner.button_text || 'এখনই অর্ডার করুন';
     let btnLink = banner.button_link || '#order';
-    if (banner.product_id) {
+    if (banner.product_slug) {
+      btnLink = `/product/${banner.product_slug}`;
+    } else if (banner.product_id) {
       btnLink = `/product/${banner.product_id}`;
     }
 
