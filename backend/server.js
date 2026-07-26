@@ -935,6 +935,107 @@ app.get('/api/products/:idOrSlug', async (req, res) => {
     }
 });
 
+// Dynamic Social Media Share Endpoint for Products
+app.get('/api/share/product/:slug', async (req, res) => {
+    try {
+        const { slug } = req.params;
+        const [products] = await pool.query('SELECT * FROM products WHERE slug = ?', [slug]);
+        if (products.length === 0) return res.status(404).send('Product not found');
+        
+        const product = products[0];
+        const userAgent = (req.headers['user-agent'] || '').toLowerCase();
+        const isCrawler = /facebookexternalhit|whatsapp|twitterbot|telegrambot|linkedinbot|pinterest|slackbot/i.test(userAgent);
+        const frontendUrl = (process.env.VITE_API_URL || 'https://ghani.com.bd').replace('backend.', '');
+        const targetUrl = `${frontendUrl}/product/${slug}`;
+
+        if (isCrawler) {
+            const [rows] = await pool.query('SELECT value FROM settings WHERE `key` = "site_title"');
+            const siteTitle = rows.length > 0 ? rows[0].value : 'Ghani';
+            const imageUrl = product.image ? (product.image.startsWith('http') ? product.image : `${process.env.VITE_API_URL || 'https://backend.ghani.com.bd'}${product.image}`) : '';
+            
+            const html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${product.name} - ${siteTitle}</title>
+                    <meta property="og:type" content="product" />
+                    <meta property="og:title" content="${product.name} - ৳${product.price}" />
+                    <meta property="og:description" content="${product.short_description || ''}" />
+                    <meta property="og:image" content="${imageUrl}" />
+                    <meta property="og:url" content="${targetUrl}" />
+                    <meta property="og:site_name" content="${siteTitle}" />
+                    <meta name="twitter:card" content="summary_large_image" />
+                    <meta name="twitter:title" content="${product.name} - ৳${product.price}" />
+                    <meta name="twitter:description" content="${product.short_description || ''}" />
+                    <meta name="twitter:image" content="${imageUrl}" />
+                </head>
+                <body>
+                    <script>window.location.href = "${targetUrl}";</script>
+                </body>
+                </html>
+            `;
+            return res.send(html);
+        } else {
+            return res.redirect(302, targetUrl);
+        }
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Server Error');
+    }
+});
+
+// Dynamic Social Media Share Endpoint for Home
+app.get('/api/share/home', async (req, res) => {
+    try {
+        const userAgent = (req.headers['user-agent'] || '').toLowerCase();
+        const isCrawler = /facebookexternalhit|whatsapp|twitterbot|telegrambot|linkedinbot|pinterest|slackbot/i.test(userAgent);
+        const frontendUrl = (process.env.VITE_API_URL || 'https://ghani.com.bd').replace('backend.', '');
+        
+        if (isCrawler) {
+            const [rows] = await pool.query('SELECT `key`, value FROM settings WHERE `key` IN ("site_title", "store_slogan", "site_logo", "store_description")');
+            const settings = {};
+            rows.forEach(row => settings[row.key] = row.value);
+            
+            const title = settings.site_title || 'Ghani';
+            const slogan = settings.store_slogan !== undefined ? settings.store_slogan : '১০০% খাঁটি পণ্য';
+            const desc = settings.store_description || '';
+            let imageUrl = settings.site_logo || '/assets/img/ghani.png';
+            if (imageUrl.startsWith('/assets')) {
+                imageUrl = `${frontendUrl}${imageUrl}`;
+            } else if (!imageUrl.startsWith('http')) {
+                imageUrl = `${process.env.VITE_API_URL || 'https://backend.ghani.com.bd'}${imageUrl}`;
+            }
+
+            const html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${title} - ${slogan}</title>
+                    <meta property="og:type" content="website" />
+                    <meta property="og:title" content="${title} - ${slogan}" />
+                    <meta property="og:description" content="${desc}" />
+                    <meta property="og:image" content="${imageUrl}" />
+                    <meta property="og:url" content="${frontendUrl}/" />
+                    <meta property="og:site_name" content="${title}" />
+                    <meta name="twitter:card" content="summary_large_image" />
+                    <meta name="twitter:title" content="${title} - ${slogan}" />
+                    <meta name="twitter:description" content="${desc}" />
+                    <meta name="twitter:image" content="${imageUrl}" />
+                </head>
+                <body>
+                    <script>window.location.href = "${frontendUrl}/";</script>
+                </body>
+                </html>
+            `;
+            return res.send(html);
+        } else {
+            return res.redirect(302, `${frontendUrl}/`);
+        }
+    } catch (err) {
+        res.status(500).send('Server Error');
+    }
+});
+
 // Create Order
 app.post('/api/orders', async (req, res) => {
     const { customer_name, phone, address, items, total_amount, fbclid, utm_source, utm_medium, utm_campaign, fbp, advance_payment_method, advance_transaction_id, buyer_success_rate, buyer_total_orders, buyer_failed_orders, coupon_code, discount_amount } = req.body;
