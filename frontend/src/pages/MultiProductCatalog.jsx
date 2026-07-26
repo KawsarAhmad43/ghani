@@ -269,9 +269,20 @@ export default function MultiProductCatalog() {
                           <span className="text-gray-500 text-xs">মূল্য:</span>
                           <span className="text-brand-green font-extrabold text-xl">৳{product.price}</span>
                         </div>
-                        <Link to={`/product/${product.slug || product.id}`} className="w-full bg-[#2d4b3e] text-white py-3 rounded-lg font-bold text-center block hover:opacity-90 transition">
-                          পণ্য দেখুন
-                        </Link>
+                        <div className="flex gap-2">
+                          <Link to={`/product/${product.slug || product.id}`} className="flex-grow bg-[#2d4b3e] text-white py-3 rounded-lg font-bold text-center block hover:opacity-90 transition">
+                            পণ্য দেখুন
+                          </Link>
+                          <button onClick={(e) => {
+                            e.preventDefault();
+                            const shareUrl = `${API_URL}/api/share/product/${product.slug || product.id}`;
+                            navigator.clipboard.writeText(shareUrl).then(() => alert('লিংক কপি করা হয়েছে! (Link Copied)'));
+                          }} className="w-12 bg-gray-100 text-gray-700 flex items-center justify-center rounded-lg hover:bg-gray-200 transition" title="শেয়ার করুন">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -81,7 +81,7 @@ export default function Header() {
           <img alt="Logo" className="w-12 h-12 rounded-full" src={settings.site_logo || "/assets/img/ghani.png"} />
           <div>
             <h1 className="text-2xl font-bold text-brand-green leading-none">{settings.site_title || settings.store_name || 'Ghani'}</h1>
-            <p className="text-xs text-gray-600">{settings.store_slogan || 'ঘানিতে ভাঙানো সরিষার তেল'}</p>
+            <p className="text-xs text-gray-600">{settings.store_slogan !== undefined ? settings.store_slogan : 'ঘানিতে ভাঙানো সরিষার তেল'}</p>
           </div>
         </Link>
         {/* Navigation */}

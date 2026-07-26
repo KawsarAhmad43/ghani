@@ -143,10 +143,10 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <img alt="Logo" className="w-10 h-10 rounded-full border-2 border-white" src="/assets/img/ghani.png" />
+              <img alt="Logo" className="w-10 h-10 rounded-full border-2 border-white" src={settings.site_logo || "/assets/img/ghani.png"} />
               <div>
                 <h4 className="text-xl font-bold leading-none">{settings.site_title || settings.store_name || 'Ghani'}</h4>
-                <p className="text-[10px] opacity-80">১০০% খাঁটি পণ্য</p>
+                <p className="text-[10px] opacity-80">{settings.store_slogan !== undefined ? settings.store_slogan : '১০০% খাঁটি পণ্য'}</p>
               </div>
             </div>
             <p className="text-sm text-gray-300 leading-relaxed">
