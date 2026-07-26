@@ -857,8 +857,8 @@ export default function SingleProductLanding() {
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-                {variants.map((v, index) => {
+              <div className={`grid grid-cols-1 ${variants.length > 0 ? 'md:grid-cols-3' : 'md:grid-cols-1'} gap-8 max-w-6xl mx-auto`}>
+                {variants.length > 0 ? variants.map((v, index) => {
                   const meta = getVariantDisplayMeta(v.name);
                   const isFeatured = index === 1 || v.name.includes('1') || v.name.includes('১');
                   return (
@@ -888,7 +888,33 @@ export default function SingleProductLanding() {
                       </button>
                     </div>
                   );
-                })}
+                }) : product && (
+                    <div className="border border-brand-green rounded-2xl p-6 flex flex-col items-center bg-white transition shadow-xl max-w-sm mx-auto w-full relative">
+                      <div className="absolute -top-4 bg-brand-green text-white px-6 py-1 rounded-full text-sm font-bold">একমাত্র পণ্য</div>
+                      <img alt={product.name} className="h-64 object-contain mb-4" src={product.image || '/assets/img/hero.png'} />
+                      <h4 className="text-xl font-bold mb-2 text-center">{product.name}</h4>
+                      <div className="flex items-center gap-2 mb-4">
+                        <span className="text-2xl font-bold text-gray-800">৳{product.price}</span>
+                      </div>
+                      <ul className="text-left space-y-2 mb-6 w-full text-sm">
+                        <li className="flex items-center gap-2">✅ খাঁটি ও কেমিক্যাল মুক্ত</li>
+                        <li className="flex items-center gap-2">✅ ঘানি পদ্ধতিতে ভাঙানো</li>
+                        <li className="flex items-center gap-2">✅ সারা দেশে ডেলিভারি</li>
+                      </ul>
+                      <button
+                        onClick={() => {
+                          const orderSec = document.getElementById('order');
+                          if (orderSec) orderSec.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="w-full bg-brand-green text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition hover:opacity-95"
+                      >
+                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        অর্ডার করুন
+                      </button>
+                    </div>
+                )}
               </div>
             )}
           </div>
