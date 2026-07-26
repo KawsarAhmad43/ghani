@@ -41,11 +41,11 @@ export default function QuicklinksManagement() {
         const file = e.target.files[0];
         if(!file) return;
         const data = new FormData();
-        data.append('file', file);
+        data.append('image', file); // changed from file to image
         setUploading(true);
         try {
             const token = localStorage.getItem('admin_token');
-            const res = await axios.post(`${API_URL}/api/admin/upload-file`, data, {
+            const res = await axios.post(`${API_URL}/api/admin/upload`, data, {
                 headers: { 
                     'Content-Type': 'multipart/form-data',
                     Authorization: `Bearer ${token}`

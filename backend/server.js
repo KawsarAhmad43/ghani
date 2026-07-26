@@ -70,29 +70,23 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 app.post('/api/admin/upload', upload.single('image'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No image provided' });
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
     try {
+        const ext = path.extname(req.file.originalname).toLowerCase();
+        
+        if (ext === '.pdf') {
+            const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
+            const filepath = path.join(__dirname, 'uploads', filename);
+            fs.writeFileSync(filepath, req.file.buffer);
+            return res.json({ url: `${process.env.VITE_API_URL || `http://localhost:${PORT}`}/uploads/${filename}` });
+        }
+
         const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.webp`;
         const filepath = path.join(__dirname, 'uploads', filename);
 
         await sharp(req.file.buffer)
             .webp({ quality: 80 })
             .toFile(filepath);
-
-        res.json({ url: `${process.env.VITE_API_URL || `http://localhost:${PORT}`}/uploads/${filename}` });
-    } catch (err) {
-        res.status(500).json({ error: 'Image processing failed', details: err.message });
-    }
-});
-
-app.post('/api/admin/upload-file', upload.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No file provided' });
-    try {
-        const ext = path.extname(req.file.originalname) || '.pdf';
-        const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
-        const filepath = path.join(__dirname, 'uploads', filename);
-
-        fs.writeFileSync(filepath, req.file.buffer);
 
         res.json({ url: `${process.env.VITE_API_URL || `http://localhost:${PORT}`}/uploads/${filename}` });
     } catch (err) {
