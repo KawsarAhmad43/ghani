@@ -36,8 +36,11 @@ export default function SingleProductLanding() {
   const [customerUser, setCustomerUser] = useState(null);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpCode, setOtpCode] = useState('');
-  const [devOtp, setDevOtp] = useState('');
   const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [advancePaymentInfo, setAdvancePaymentInfo] = useState({
+    advance_payment_method: 'bkash',
+    advance_transaction_id: ''
+  });
 
   const [approvedReviews, setApprovedReviews] = useState([]);
   const [reviewForm, setReviewForm] = useState({
@@ -56,7 +59,8 @@ export default function SingleProductLanding() {
     self_branding_point: [],
     our_process_step: [],
     product_advantage: [],
-    usage_tip: []
+    usage_tip: [],
+    trust_badge: []
   });
 
   useEffect(() => {
@@ -72,6 +76,12 @@ export default function SingleProductLanding() {
 
         const loadedSettings = settingsRes.data || {};
         setSettings(prev => ({ ...prev, ...loadedSettings }));
+        if (loadedSettings.advance_payment_methods) {
+          const methods = loadedSettings.advance_payment_methods.split(',');
+          if (methods.length > 0) {
+            setAdvancePaymentInfo(prev => ({ ...prev, advance_payment_method: methods[0] }));
+          }
+        }
         setBanners(bannersRes.data || []);
         setApprovedReviews(reviewsRes.data || []);
         if (contentRes.data) {
@@ -470,6 +480,12 @@ export default function SingleProductLanding() {
       return;
     }
 
+    if (String(settings.fraud_check_enabled) === 'true' && !advancePaymentInfo.advance_transaction_id) {
+      toast.error('দয়া করে অগ্রিম পেমেন্টের ট্রানজেকশন আইডি (TrxID) প্রদান করুন।');
+      setOrderError('দয়া করে অগ্রিম পেমেন্টের ট্রানজেকশন আইডি (TrxID) প্রদান করুন।');
+      return;
+    }
+
     if (!product) {
       toast.error('কোন পণ্য পাওয়া যায়নি।');
       setOrderError('কোন পণ্য পাওয়া যায়নি।');
@@ -483,7 +499,7 @@ export default function SingleProductLanding() {
     const totalAmount = unitPrice;
 
     // Check if OTP is disabled
-    if (settings.otp_enabled === false) {
+    if (settings.otp_enabled === false || String(settings.otp_enabled) === 'false') {
       try {
         const getCookie = (name) => {
           const value = `; ${document.cookie}`;
@@ -503,6 +519,8 @@ export default function SingleProductLanding() {
           utm_medium: localStorage.getItem('ghani_utm_medium') || '',
           utm_campaign: localStorage.getItem('ghani_utm_campaign') || '',
           fbp: getCookie('_fbp') || '',
+          advance_payment_method: String(settings.fraud_check_enabled) === 'true' ? advancePaymentInfo.advance_payment_method : null,
+          advance_transaction_id: String(settings.fraud_check_enabled) === 'true' ? advancePaymentInfo.advance_transaction_id : null,
           items: [{
             product_id: product.id,
             quantity: 1,
@@ -514,15 +532,18 @@ export default function SingleProductLanding() {
         const res = await axios.post(`${API_URL}/api/orders/no-otp`, orderPayload);
         
         if (res.data.success) {
-          trackEvent('Lead', {
-            value: totalAmount,
-            currency: 'BDT',
-            content_name: product.name,
-            content_ids: [product.id]
-          }, {
-            phone: form.phone,
-            email: form.email || ''
-          });
+          const isPartiallyPaid = String(settings.fraud_check_enabled) === 'true' && advancePaymentInfo.advance_transaction_id;
+          if (isPartiallyPaid) {
+            trackEvent('Lead', {
+              value: totalAmount,
+              currency: 'BDT',
+              content_name: product.name,
+              content_ids: [product.id]
+            }, {
+              phone: form.phone,
+              email: form.email || ''
+            });
+          }
 
           if (res.data.user) {
             localStorage.setItem('customer_user', JSON.stringify(res.data.user));
@@ -559,7 +580,6 @@ export default function SingleProductLanding() {
         email: form.email || null
       });
       if (res.data.success) {
-        setDevOtp(res.data.devOtp || '');
         setShowOtpModal(true);
         if (isEmailOtp) {
           toast.success('আপনার ইমেইলে একটি ওটিপি (OTP) পাঠানো হয়েছে!');
@@ -580,6 +600,11 @@ export default function SingleProductLanding() {
     e.preventDefault();
     if (!otpCode) {
       toast.warning('দয়া করে ওটিপি কোডটি লিখুন।');
+      return;
+    }
+
+    if (String(settings.fraud_check_enabled) === 'true' && !advancePaymentInfo.advance_transaction_id) {
+      toast.error('দয়া করে অগ্রিম পেমেন্টের ট্রানজেকশন আইডি (TrxID) প্রদান করুন।');
       return;
     }
 
@@ -607,6 +632,8 @@ export default function SingleProductLanding() {
         utm_medium: localStorage.getItem('ghani_utm_medium') || '',
         utm_campaign: localStorage.getItem('ghani_utm_campaign') || '',
         fbp: getCookie('_fbp') || '',
+        advance_payment_method: String(settings.fraud_check_enabled) === 'true' ? advancePaymentInfo.advance_payment_method : null,
+        advance_transaction_id: String(settings.fraud_check_enabled) === 'true' ? advancePaymentInfo.advance_transaction_id : null,
         items: [{
           product_id: product.id,
           quantity: 1,
@@ -618,15 +645,18 @@ export default function SingleProductLanding() {
       const res = await axios.post(`${API_URL}/api/orders/verify-otp`, orderPayload);
       
       if (res.data.success) {
-        trackEvent('Lead', {
-          value: totalAmount,
-          currency: 'BDT',
-          content_name: product.name,
-          content_ids: [product.id]
-        }, {
-          phone: form.phone,
-          email: form.email || ''
-        });
+        const isPartiallyPaid = String(settings.fraud_check_enabled) === 'true' && advancePaymentInfo.advance_transaction_id;
+        if (isPartiallyPaid) {
+          trackEvent('Lead', {
+            value: totalAmount,
+            currency: 'BDT',
+            content_name: product.name,
+            content_ids: [product.id]
+          }, {
+            phone: form.phone,
+            email: form.email || ''
+          });
+        }
 
         if (res.data.user) {
           localStorage.setItem('customer_user', JSON.stringify(res.data.user));
@@ -693,6 +723,8 @@ export default function SingleProductLanding() {
     .filter(p => p.variant_count === 1) // Issue 8 requirement
     .sort((a, b) => b.id - a.id)
     .slice(0, 8);
+
+  const isAdvancePaymentIncomplete = String(settings.fraud_check_enabled) === 'true' && !advancePaymentInfo.advance_transaction_id.trim();
 
   return (
     <div className="bg-gray-50 text-gray-800 font-sans" style={{ fontFamily: "'Hind Siliguri', sans-serif" }}>
@@ -1177,11 +1209,61 @@ export default function SingleProductLanding() {
                         </select>
                       </div>
                     )}
-                    <button disabled={isSubmitting} className="w-full bg-brand-yellow hover:bg-yellow-500 text-black font-extrabold py-3 md:py-4 rounded-lg flex items-center justify-center gap-2 text-lg md:text-xl transition shadow-lg disabled:opacity-55" type="submit">
+
+                    {String(settings.fraud_check_enabled) === 'true' && (
+                      <div className="space-y-4 border-t border-gray-200 pt-4 mt-4">
+                        <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl text-sm space-y-3">
+                          <p className="font-bold flex items-center gap-1.5 text-base text-red-900">
+                            ⚠️ অর্ডার কনফার্ম করতে অগ্রিম পেমেন্ট করুন
+                          </p>
+                          <p className="text-xs leading-relaxed font-semibold">
+                            {settings.fraud_advance_instructions || 'আমাদের সিস্টেমে অর্ডারটি কনফার্ম করতে দয়া করে অগ্রিম চার্জটি নিচে দেওয়া নাম্বারে সেন্ড মানি করুন এবং ট্রানজেকশন আইডি প্রদান করুন।'}
+                          </p>
+                          <div className="bg-white p-3 rounded-lg border border-red-100 mt-2 text-xs font-mono space-y-1.5 text-gray-800 shadow-sm">
+                            <div><strong>পেমেন্ট মাধ্যম:</strong> bKash / Nagad / Rocket (সেন্ড মানি)</div>
+                            <div><strong>নাম্বার:</strong> <span className="font-bold text-[#2d4b3e] text-sm select-all">{settings.fraud_advance_payment_number}</span></div>
+                            <div><strong>অগ্রিম চার্জের পরিমাণ:</strong> <span className="font-bold text-red-600 text-sm">৳{settings.fraud_advance_amount_type === 'custom' ? settings.fraud_advance_custom_amount : (settings.delivery_charge_dhaka || 60)}</span></div>
+                          </div>
+                        </div>
+
+                        <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl space-y-4">
+                          <h4 className="font-bold text-sm text-gray-800 border-b pb-2">অগ্রিম পেমেন্ট ভেরিফিকেশন (TrxID)</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs font-bold text-gray-600 mb-1.5">পেমেন্ট মেথড</label>
+                              <select 
+                                className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs outline-none cursor-pointer font-semibold"
+                                value={advancePaymentInfo.advance_payment_method}
+                                onChange={e => setAdvancePaymentInfo({ ...advancePaymentInfo, advance_payment_method: e.target.value })}
+                              >
+                                {(settings.advance_payment_methods || 'bkash,nagad,rocket').split(',').map(method => (
+                                  <option key={method} value={method}>
+                                    {method === 'bkash' ? 'bKash (বিকাশ)' : method === 'nagad' ? 'Nagad (নগদ)' : 'Rocket (রকেট)'}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-600 mb-1.5">Transaction ID (TrxID)</label>
+                              <input 
+                                required
+                                type="text"
+                                placeholder="e.g. 9J283KSK2J"
+                                className="w-full bg-white border border-gray-350 rounded-lg p-2.5 text-xs outline-none font-mono uppercase font-bold text-gray-800"
+                                value={advancePaymentInfo.advance_transaction_id}
+                                onChange={e => setAdvancePaymentInfo({ ...advancePaymentInfo, advance_transaction_id: e.target.value.toUpperCase() })}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <button disabled={isSubmitting || isAdvancePaymentIncomplete} className="w-full bg-brand-yellow hover:bg-yellow-500 text-black font-extrabold py-3 md:py-4 rounded-lg flex items-center justify-center gap-2 text-lg md:text-xl transition shadow-lg disabled:opacity-55 disabled:cursor-not-allowed" type="submit" title={isAdvancePaymentIncomplete ? "TrxID প্রদান করুন" : "অর্ডার কনফার্ম করুন"}>
                       <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
                       </svg>
-                      {isSubmitting ? 'অর্ডার হচ্ছে...' : 'অর্ডার কনফার্ম করুন'}
+                      {isSubmitting ? 'অর্ডার হচ্ছে...' : (isAdvancePaymentIncomplete ? 'TrxID প্রদান করুন' : 'অর্ডার কনফার্ম করুন')}
                     </button>
                   </form>
                 </div>
@@ -1211,10 +1293,20 @@ export default function SingleProductLanding() {
             হোয়াটসঅ্যাপে অর্ডার করতে ক্লিক করুন
           </a>
           <div className="bg-white py-2 px-4 flex flex-wrap justify-center gap-4 md:gap-12 text-[10px] md:text-xs font-bold text-gray-700">
-            <div className="flex items-center gap-1.5"><span className="text-brand-green text-base">🚚</span> সারা দেশে হোম ডেলিভারি</div>
-            <div className="flex items-center gap-1.5"><span className="text-brand-green text-base">💵</span> ক্যাশ অন ডেলিভারি</div>
-            <div className="flex items-center gap-1.5"><span className="text-brand-green text-base">🛡️</span> ৩ দিনের রিটার্ন গ্যারান্টি</div>
-            <div className="flex items-center gap-1.5"><span className="text-brand-green text-base">✅</span> ১০০% খাঁটি পণ্যের গ্যারান্টি</div>
+            {webContent.trust_badge && webContent.trust_badge.length > 0 ? (
+              webContent.trust_badge.map(badge => (
+                <div key={badge.id} className="flex items-center gap-1.5">
+                  <span className="text-brand-green text-base">{badge.icon}</span> {badge.title}
+                </div>
+              ))
+            ) : (
+              <>
+                <div className="flex items-center gap-1.5"><span className="text-brand-green text-base">🚚</span> সারা দেশে হোম ডেলিভারি</div>
+                <div className="flex items-center gap-1.5"><span className="text-brand-green text-base">💵</span> ক্যাশ অন ডেলিভারি</div>
+                <div className="flex items-center gap-1.5"><span className="text-brand-green text-base">🛡️</span> ৩ দিনের রিটার্ন গ্যারান্টি</div>
+                <div className="flex items-center gap-1.5"><span className="text-brand-green text-base">✅</span> ১০০% খাঁটি পণ্যের গ্যারান্টি</div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -1238,12 +1330,6 @@ export default function SingleProductLanding() {
                 <>আপনার <strong>{form.phone}</strong> নম্বরে একটি ওটিপি (OTP) পাঠানো হয়েছে। ওটিপি কোডটি নিচের বক্সে লিখুন।</>
               )}
             </p>
-
-            {devOtp && (
-              <div className="bg-green-50 text-green-800 text-xs font-bold p-3 rounded-lg mb-6 border border-green-200">
-                🔧 Dev Mode Helper OTP: <span className="underline text-sm">{devOtp}</span>
-              </div>
-            )}
 
             <form onSubmit={handleVerifyOtp} className="space-y-4">
               <div>

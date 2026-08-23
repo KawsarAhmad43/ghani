@@ -32,7 +32,8 @@ export default function WebsiteManagement() {
     self_branding_point: [],
     our_process_step: [],
     product_advantage: [],
-    usage_tip: []
+    usage_tip: [],
+    trust_badge: []
   });
 
   // Modal / Form States
@@ -211,7 +212,8 @@ export default function WebsiteManagement() {
     { id: 'self_branding', label: 'Self Branding (আসল তেল?)', icon: ShieldAlert },
     { id: 'our_process', label: 'Journey (আমাদের তেলের যাত্রা)', icon: Sparkles },
     { id: 'product_advantage', label: 'Advantage (স্বাস্থ্য উপকারিতা)', icon: Heart },
-    { id: 'usage_tip', label: 'How to use (ব্যবহার নির্দেশিকা)', icon: Flame }
+    { id: 'usage_tip', label: 'How to use (ব্যবহার নির্দেশিকা)', icon: Flame },
+    { id: 'trust_badge', label: 'Trust Badges (ট্রাস্ট ব্যাজ)', icon: ShieldAlert }
   ];
 
   if (loading && !data.about_main.title) {
@@ -541,6 +543,45 @@ export default function WebsiteManagement() {
                 ))}
                 {data.usage_tip.length === 0 && (
                   <div className="col-span-2 text-center py-12 text-xs text-gray-400">No usage guides configured. Add one above.</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'trust_badge' && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 xl:p-8 flex-grow">
+              <div className="flex justify-between items-center mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">Trust Badges (Sticky Bar)</h2>
+                  <p className="text-sm text-gray-500 mt-1">Manage the trust badges and icons shown below the WhatsApp button on the product page.</p>
+                </div>
+                <button onClick={() => handleOpenAddModal('trust_badge')} className="flex items-center gap-2 bg-[#2d4b3e] text-white px-4 py-2 rounded-lg font-bold hover:opacity-90 transition shadow-sm">
+                  <Plus size={16} /> Add Trust Badge
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {data.trust_badge.map((item) => (
+                  <div key={item.id} className="border rounded-xl p-4 bg-white shadow-sm flex items-center gap-4 hover:shadow-md transition">
+                    <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center text-[#2d4b3e] flex-shrink-0 font-bold border">
+                      <span className="text-xl">{item.icon}</span>
+                    </div>
+                    <div className="flex-grow">
+                      <h4 className="font-bold text-sm text-gray-800">{item.title}</h4>
+                      <p className="text-[10px] text-gray-400">Order: {item.sort_order}</p>
+                    </div>
+                    <div className="flex gap-1 flex-shrink-0">
+                      <button onClick={() => handleOpenEditModal(item)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition" title="Edit">
+                        <Edit size={14} />
+                      </button>
+                      <button onClick={() => handleDeleteItem(item.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded transition" title="Delete">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {data.trust_badge.length === 0 && (
+                  <div className="col-span-1 md:col-span-2 text-center py-12 text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed">No trust badges configured. Add one above.</div>
                 )}
               </div>
             </div>
