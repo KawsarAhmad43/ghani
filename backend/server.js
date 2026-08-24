@@ -689,6 +689,27 @@ initDb();
 
 // --- API Routes ---
 
+// Dynamic Image Proxies for Social Media and Favicon
+app.get('/api/favicon', async (req, res) => {
+    try {
+        const [rows] = await pool.query("SELECT value FROM settings WHERE `key` = 'favicon'");
+        const faviconUrl = (rows.length > 0 && rows[0].value) ? rows[0].value : '/favicon.svg';
+        res.redirect(302, faviconUrl);
+    } catch (err) {
+        res.redirect(302, '/favicon.svg');
+    }
+});
+
+app.get('/api/og-image', async (req, res) => {
+    try {
+        const [rows] = await pool.query("SELECT value FROM settings WHERE `key` = 'site_logo'");
+        const logoUrl = (rows.length > 0 && rows[0].value) ? rows[0].value : 'https://ghani.com.bd/assets/img/ghani.png';
+        res.redirect(302, logoUrl);
+    } catch (err) {
+        res.redirect(302, 'https://ghani.com.bd/assets/img/ghani.png');
+    }
+});
+
 // Get Settings
 app.get('/api/settings', async (req, res) => {
     try {
@@ -1222,7 +1243,7 @@ app.post('/api/orders/send-otp', async (req, res) => {
                 console.warn('[SMTP WARNING] SMTP Host or User is not configured. Falling back to Console-only output.');
             }
 
-            return res.json({ success: true, message: 'OTP sent to email.', devOtp: otp });
+            return res.json({ success: true, message: 'OTP sent to email.' });
         } else {
             // SMS Flow
             await pool.query('DELETE FROM otps WHERE phone = ?', [phone]);
@@ -1282,7 +1303,7 @@ app.post('/api/orders/send-otp', async (req, res) => {
                 }
             }
 
-            res.json({ success: true, message: 'OTP sent to mobile.', devOtp: otp });
+            res.json({ success: true, message: 'OTP sent to mobile.' });
         }
     } catch (err) {
         handleServerError(res, err);
@@ -1962,7 +1983,8 @@ app.get('/api/website-content', async (req, res) => {
             self_branding_point: rows.filter(r => r.type === 'self_branding_point'),
             our_process_step: rows.filter(r => r.type === 'our_process_step'),
             product_advantage: rows.filter(r => r.type === 'product_advantage'),
-            usage_tip: rows.filter(r => r.type === 'usage_tip')
+            usage_tip: rows.filter(r => r.type === 'usage_tip'),
+            trust_badge: rows.filter(r => r.type === 'trust_badge')
         };
         res.json(grouped);
     } catch (err) {

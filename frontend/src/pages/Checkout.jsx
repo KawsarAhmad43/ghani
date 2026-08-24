@@ -36,7 +36,6 @@ export default function Checkout() {
   const [customerUser, setCustomerUser] = useState(null);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpCode, setOtpCode] = useState('');
-  const [devOtp, setDevOtp] = useState('');
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [fraudCheckResult, setFraudCheckResult] = useState(null);
@@ -280,15 +279,15 @@ export default function Checkout() {
       return;
     }
 
-    if (settings.fraud_check_enabled === 'true' && !advancePaymentInfo.advance_transaction_id) {
+    if (String(settings.fraud_check_enabled) === 'true' && !advancePaymentInfo.advance_transaction_id) {
       toast.error('দয়া করে অগ্রিম পেমেন্টের ট্রানজেকশন আইডি (TrxID) প্রদান করুন।');
       return;
     }
 
     setLoading(true);
 
-    // Bypass OTP Flow
-    if (settings.otp_enabled === false) {
+    // Check if OTP is disabled
+    if (settings.otp_enabled === false || String(settings.otp_enabled) === 'false') {
       try {
         const getCookie = (name) => {
           const value = `; ${document.cookie}`;
@@ -314,8 +313,8 @@ export default function Checkout() {
             price: item.price,
             variant_id: item.variant_id || null
           })),
-          advance_payment_method: settings.fraud_check_enabled === 'true' ? advancePaymentInfo.advance_payment_method : null,
-          advance_transaction_id: settings.fraud_check_enabled === 'true' ? advancePaymentInfo.advance_transaction_id : null,
+          advance_payment_method: String(settings.fraud_check_enabled) === 'true' ? advancePaymentInfo.advance_payment_method : null,
+          advance_transaction_id: String(settings.fraud_check_enabled) === 'true' ? advancePaymentInfo.advance_transaction_id : null,
           buyer_success_rate: null,
           buyer_total_orders: null,
           buyer_failed_orders: null,
@@ -327,14 +326,17 @@ export default function Checkout() {
         const res = await axios.post(`${API_URL}/api/orders/no-otp`, orderData);
 
         if (res.data.success) {
-          trackEvent('Lead', {
-            value: grandTotal,
-            currency: 'BDT',
-            order_id: res.data.order_id
-          }, {
-            phone: formData.phone,
-            email: formData.email || ''
-          });
+          const isPaidOrPartiallyPaid = paymentMethod === 'online' || (String(settings.fraud_check_enabled) === 'true' && advancePaymentInfo.advance_transaction_id);
+          if (isPaidOrPartiallyPaid) {
+            trackEvent('Lead', {
+              value: grandTotal,
+              currency: 'BDT',
+              order_id: res.data.order_id
+            }, {
+              phone: formData.phone,
+              email: formData.email || ''
+            });
+          }
 
           if (res.data.user) {
             localStorage.setItem('customer_user', JSON.stringify(res.data.user));
@@ -394,7 +396,6 @@ export default function Checkout() {
         email: formData.email || null
       });
       if (res.data.success) {
-        setDevOtp(res.data.devOtp || '');
         setShowOtpModal(true);
         if (isEmailOtp) {
           toast.success('আপনার ইমেইলে একটি ওটিপি (OTP) পাঠানো হয়েছে!');
@@ -418,7 +419,7 @@ export default function Checkout() {
       return;
     }
 
-    if (settings.fraud_check_enabled === 'true' && !advancePaymentInfo.advance_transaction_id) {
+    if (String(settings.fraud_check_enabled) === 'true' && !advancePaymentInfo.advance_transaction_id) {
       toast.error('দয়া করে অগ্রিম পেমেন্টের ট্রানজেকশন আইডি (TrxID) প্রদান করুন।');
       return;
     }
@@ -450,8 +451,8 @@ export default function Checkout() {
           price: item.price,
           variant_id: item.variant_id || null
         })),
-        advance_payment_method: settings.fraud_check_enabled === 'true' ? advancePaymentInfo.advance_payment_method : null,
-        advance_transaction_id: settings.fraud_check_enabled === 'true' ? advancePaymentInfo.advance_transaction_id : null,
+        advance_payment_method: String(settings.fraud_check_enabled) === 'true' ? advancePaymentInfo.advance_payment_method : null,
+        advance_transaction_id: String(settings.fraud_check_enabled) === 'true' ? advancePaymentInfo.advance_transaction_id : null,
         buyer_success_rate: null,
         buyer_total_orders: null,
         buyer_failed_orders: null,
@@ -463,14 +464,17 @@ export default function Checkout() {
       const res = await axios.post(`${API_URL}/api/orders/verify-otp`, orderData);
 
       if (res.data.success) {
-        trackEvent('Lead', {
-          value: grandTotal,
-          currency: 'BDT',
-          order_id: res.data.order_id
-        }, {
-          phone: formData.phone,
-          email: formData.email || ''
-        });
+        const isPaidOrPartiallyPaid = paymentMethod === 'online' || (String(settings.fraud_check_enabled) === 'true' && advancePaymentInfo.advance_transaction_id);
+        if (isPaidOrPartiallyPaid) {
+          trackEvent('Lead', {
+            value: grandTotal,
+            currency: 'BDT',
+            order_id: res.data.order_id
+          }, {
+            phone: formData.phone,
+            email: formData.email || ''
+          });
+        }
 
         if (res.data.user) {
           localStorage.setItem('customer_user', JSON.stringify(res.data.user));
@@ -522,6 +526,8 @@ export default function Checkout() {
       setVerifyingOtp(false);
     }
   };
+
+  const isAdvancePaymentIncomplete = String(settings.fraud_check_enabled) === 'true' && !advancePaymentInfo.advance_transaction_id.trim();
 
   return (
     <div className="bg-background text-on-surface selection:bg-secondary-container selection:text-on-secondary-container min-h-screen">
@@ -671,11 +677,11 @@ export default function Checkout() {
                       <div className="ml-4">
                         <span className={`block font-bold ${formData.payment === 'cod' ? 'text-primary' : 'text-on-surface'}`}>Cash on Delivery</span>
                         <span className="text-sm text-on-surface-variant">
-                          {settings.fraud_check_enabled === 'true' ? 'ডেলিভারি চার্জ অগ্রিম প্রযোজ্য' : 'পণ্য হাতে পেয়ে টাকা দিন'}
+                          {String(settings.fraud_check_enabled) === 'true' ? 'ডেলিভারি চার্জ অগ্রিম প্রযোজ্য' : 'পণ্য হাতে পেয়ে টাকা দিন'}
                         </span>
                       </div>
                     </label>
-                    <label
+                    {/* <label
                       className={`relative flex items-center p-4 cursor-pointer glass-panel rounded-lg border transition-all ${formData.payment === 'online' ? 'border-primary-container bg-secondary-container/20' : 'border-transparent hover:border-outline-variant'}`}
                     >
                       <input
@@ -689,12 +695,12 @@ export default function Checkout() {
                         <span className={`block font-bold ${formData.payment === 'online' ? 'text-primary' : 'text-on-surface'}`}>Online Payment</span>
                         <span className="text-sm text-on-surface-variant">বিকাশ বা কার্ডের মাধ্যমে</span>
                       </div>
-                    </label>
+                    </label> */}
                   </div>
                 </div>
 
                 {/* Fraud Instructions Warning Panel & TrxID Input */}
-                {settings.fraud_check_enabled === 'true' && (
+                {String(settings.fraud_check_enabled) === 'true' && (
                   <div className="space-y-4 border-t pt-4">
                     <div className="bg-red-50 border border-red-200 text-red-800 p-5 rounded-xl text-sm space-y-3">
                       <p className="font-bold flex items-center gap-1.5 text-base text-red-900">
@@ -746,11 +752,12 @@ export default function Checkout() {
                 <div className="pt-8">
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="w-full bg-primary-container text-on-primary font-headline-lg py-4 rounded-xl shadow-lg hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    disabled={loading || isAdvancePaymentIncomplete}
+                    className="w-full bg-primary-container text-on-primary font-headline-lg py-4 rounded-xl shadow-lg hover:opacity-95 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={isAdvancePaymentIncomplete ? "TrxID প্রদান করুন" : "অর্ডারটি নিশ্চিত করুন"}
                   >
-                    {loading ? 'প্রসেসিং হচ্ছে...' : 'অর্ডারটি নিশ্চিত করুন'}
-                    {!loading && <span className="material-symbols-outlined">arrow_forward</span>}
+                    {loading ? 'প্রসেসিং হচ্ছে...' : (isAdvancePaymentIncomplete ? 'TrxID প্রদান করুন' : 'অর্ডারটি নিশ্চিত করুন')}
+                    {!loading && !isAdvancePaymentIncomplete && <span className="material-symbols-outlined">arrow_forward</span>}
                   </button>
                 </div>
               </form>
@@ -932,12 +939,6 @@ export default function Checkout() {
                 <>আপনার <strong>{formData.phone}</strong> নম্বরে একটি ওটিপি (OTP) পাঠানো হয়েছে। ওটিপি কোডটি নিচের বক্সে লিখুন।</>
               )}
             </p>
-
-            {devOtp && (
-              <div className="bg-green-50 text-green-800 text-xs font-bold p-3 rounded-lg mb-6 border border-green-200">
-                🔧 Dev Mode Helper OTP: <span className="underline text-sm">{devOtp}</span>
-              </div>
-            )}
 
             <form onSubmit={handleVerifyOtp} className="space-y-4">
               <div>

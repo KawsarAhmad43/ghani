@@ -9,6 +9,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [customerUser, setCustomerUser] = useState(null);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [settings, setSettings] = useState({
     store_name: 'Ghani',
     store_phone: '01872-345678',
@@ -29,7 +30,8 @@ export default function Header() {
           setSettings(prev => ({ ...prev, ...res.data }));
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setSettingsLoaded(true));
 
     // Sync Cart Count
     const updateCartCount = () => {
@@ -78,7 +80,11 @@ export default function Header() {
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         {/* Logo and Slogan */}
         <Link to="/" className="flex items-center gap-3">
-          <img alt="Logo" className="w-12 h-12 rounded-full" src={settings.site_logo || "/assets/img/ghani.png"} />
+          {settingsLoaded ? (
+            <img alt="Logo" className="w-12 h-12 rounded-full" src={settings.site_logo || "/assets/img/ghani.png"} />
+          ) : (
+            <div className="w-12 h-12 rounded-full bg-gray-100 animate-pulse"></div>
+          )}
           <div>
             <h1 className="text-2xl font-bold text-brand-green leading-none">{settings.site_title || settings.store_name || 'Ghani'}</h1>
             <p className="text-xs text-gray-600">{settings.store_slogan !== undefined ? settings.store_slogan : 'ঘানিতে ভাঙানো সরিষার তেল'}</p>
