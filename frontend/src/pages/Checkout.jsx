@@ -326,7 +326,7 @@ export default function Checkout() {
         const res = await axios.post(`${API_URL}/api/orders/no-otp`, orderData);
 
         if (res.data.success) {
-          const isPaidOrPartiallyPaid = paymentMethod === 'online' || (String(settings.fraud_check_enabled) === 'true' && advancePaymentInfo.advance_transaction_id);
+          const isPaidOrPartiallyPaid = formData.payment === 'online' || (String(settings.fraud_check_enabled) === 'true' && advancePaymentInfo.advance_transaction_id);
           if (isPaidOrPartiallyPaid) {
             trackEvent('Lead', {
               value: grandTotal,
@@ -464,7 +464,7 @@ export default function Checkout() {
       const res = await axios.post(`${API_URL}/api/orders/verify-otp`, orderData);
 
       if (res.data.success) {
-        const isPaidOrPartiallyPaid = paymentMethod === 'online' || (String(settings.fraud_check_enabled) === 'true' && advancePaymentInfo.advance_transaction_id);
+        const isPaidOrPartiallyPaid = formData.payment === 'online' || (String(settings.fraud_check_enabled) === 'true' && advancePaymentInfo.advance_transaction_id);
         if (isPaidOrPartiallyPaid) {
           trackEvent('Lead', {
             value: grandTotal,
