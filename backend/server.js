@@ -452,6 +452,14 @@ async function setupTables(db) {
             await db.query('ALTER TABLE orders ADD COLUMN buyer_failed_orders INT NULL');
         } catch (err) { }
 
+        // New missing columns added via ALTER TABLE to ensure they exist on older schemas
+        try { await db.query('ALTER TABLE users ADD COLUMN loyalty_points INT DEFAULT 0'); } catch (err) {}
+        try { await db.query('ALTER TABLE orders ADD COLUMN points_earned INT DEFAULT 0'); } catch (err) {}
+        try { await db.query('ALTER TABLE orders ADD COLUMN points_used INT DEFAULT 0'); } catch (err) {}
+        try { await db.query('ALTER TABLE orders ADD COLUMN coupon_code VARCHAR(50)'); } catch (err) {}
+        try { await db.query('ALTER TABLE orders ADD COLUMN discount_amount DECIMAL(10,2) DEFAULT 0'); } catch (err) {}
+
+
         // Backfill event_id for existing orders
         try {
             const [rows] = await db.query("SELECT id FROM orders WHERE event_id IS NULL OR event_id = ''");
@@ -1503,11 +1511,15 @@ app.post('/api/orders/no-otp', async (req, res) => {
     const crypto = require('crypto');
     let eventId;
     try {
-        eventId = crypto.randomUUID();
+        if (crypto.randomUUID) {
+            eventId = crypto.randomUUID();
+        } else {
+            eventId = crypto.randomBytes(16).toString('hex');
+        }
         if (!eventId) throw new Error('UUID generation returned empty');
     } catch (uuidErr) {
         console.error('UUID generation failed for no-otp:', uuidErr);
-        return res.status(500).json({ error: 'Order UUID generation failed. Transaction cancelled.' });
+        eventId = `evt_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     }
 
     const conn = await pool.getConnection();
@@ -1984,7 +1996,9 @@ app.get('/api/website-content', async (req, res) => {
             our_process_step: rows.filter(r => r.type === 'our_process_step'),
             product_advantage: rows.filter(r => r.type === 'product_advantage'),
             usage_tip: rows.filter(r => r.type === 'usage_tip'),
-            trust_badge: rows.filter(r => r.type === 'trust_badge')
+            trust_badge: rows.filter(r => r.type === 'trust_badge'),
+            order_section_main: rows.find(r => r.type === 'order_section_main') || { id: null, type: 'order_section_main', title: '', description: '', image: '' },
+            order_section_badge: rows.filter(r => r.type === 'order_section_badge')
         };
         res.json(grouped);
     } catch (err) {
@@ -1999,10 +2013,21 @@ app.post('/api/admin/website-content', async (req, res) => {
             const [exists] = await pool.query("SELECT id FROM website_content WHERE type = 'about_main'");
             if (exists.length > 0) {
                 await pool.query(
-                    'UPDATE website_content SET title = ?, description = ? WHERE id = ?',
-                    [title || null, description || null, exists[0].id]
+                    'UPDATE website_content SET title = ?, description = ?, image = ? WHERE id = ?',
+                    [title || null, description || null, image || exists[0].image || null, exists[0].id]
                 );
                 return res.json({ message: 'About Us main content updated successfully', id: exists[0].id });
+            }
+        }
+
+        if (type === 'order_section_main') {
+            const [exists] = await pool.query("SELECT id FROM website_content WHERE type = 'order_section_main'");
+            if (exists.length > 0) {
+                await pool.query(
+                    'UPDATE website_content SET title = ?, description = ?, image = ? WHERE id = ?',
+                    [title || null, description || null, image !== undefined ? image : exists[0].image, exists[0].id]
+                );
+                return res.json({ message: 'Order section main content updated successfully', id: exists[0].id });
             }
         }
 
