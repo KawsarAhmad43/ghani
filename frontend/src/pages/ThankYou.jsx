@@ -6,6 +6,7 @@ import Footer from '../components/Footer';
 export default function ThankYou() {
   const location = useLocation();
   const state = location.state || {};
+  const rawOrderId = state.orderId;
   const orderId = rawOrderId ? (isNaN(rawOrderId) ? rawOrderId : (100000 + (Number(rawOrderId) * 13579 + 382153) % 900000).toString()) : '495732';
   const address = state.address || 'Dhanmondi, Dhaka';
   const total = state.total || 690;
