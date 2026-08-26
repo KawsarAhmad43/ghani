@@ -60,7 +60,9 @@ export default function SingleProductLanding() {
     our_process_step: [],
     product_advantage: [],
     usage_tip: [],
-    trust_badge: []
+    trust_badge: [],
+    order_section_main: { title: 'এখনই অর্ডার করুন', description: 'খাঁটি সরিষার তেল পেতে নিচের ফর্মটি পূরণ করুন', image: '' },
+    order_section_badge: []
   });
 
   useEffect(() => {
@@ -402,25 +404,23 @@ export default function SingleProductLanding() {
                 return (
                   <div
                     key={banner.id}
-                    className={`w-full transition-all duration-1000 ease-in-out absolute inset-0 flex items-center ${
-                      isActive ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-4 pointer-events-none z-0'
-                    }`}
+                    className={`w-full transition-all duration-1000 ease-in-out absolute inset-0 flex items-center ${isActive ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-4 pointer-events-none z-0'
+                      }`}
                   >
                     {isActive && renderBannerContent(banner)}
                   </div>
                 );
               })}
             </div>
-            
+
             {banners.length > 1 && (
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
                 {banners.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => setActiveSlide(index)}
-                    className={`w-3 h-3 rounded-full transition-all ${
-                      activeSlide === index ? 'bg-brand-green w-6' : 'bg-gray-300 hover:bg-gray-400'
-                    }`}
+                    className={`w-3 h-3 rounded-full transition-all ${activeSlide === index ? 'bg-brand-green w-6' : 'bg-gray-300 hover:bg-gray-400'
+                      }`}
                   />
                 ))}
               </div>
@@ -471,9 +471,9 @@ export default function SingleProductLanding() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const isEmailOtp = settings.otp_enabled !== false && settings.otp_type === 'email';
-    
+
     if (!form.name || !form.phone || !form.address || (isEmailOtp && !form.email)) {
       toast.error('দয়া করে সবগুলি ফিল্ড সঠিকভাবে পূরণ করুন।');
       setOrderError('দয়া করে সবগুলি ফিল্ড সঠিকভাবে পূরণ করুন।');
@@ -530,7 +530,7 @@ export default function SingleProductLanding() {
         };
 
         const res = await axios.post(`${API_URL}/api/orders/no-otp`, orderPayload);
-        
+
         if (res.data.success) {
           const isPartiallyPaid = String(settings.fraud_check_enabled) === 'true' && advancePaymentInfo.advance_transaction_id;
           if (isPartiallyPaid) {
@@ -575,7 +575,7 @@ export default function SingleProductLanding() {
 
     // OTP Flow
     try {
-      const res = await axios.post(`${API_URL}/api/orders/send-otp`, { 
+      const res = await axios.post(`${API_URL}/api/orders/send-otp`, {
         phone: form.phone,
         email: form.email || null
       });
@@ -643,7 +643,7 @@ export default function SingleProductLanding() {
       };
 
       const res = await axios.post(`${API_URL}/api/orders/verify-otp`, orderPayload);
-      
+
       if (res.data.success) {
         const isPartiallyPaid = String(settings.fraud_check_enabled) === 'true' && advancePaymentInfo.advance_transaction_id;
         if (isPartiallyPaid) {
@@ -921,31 +921,31 @@ export default function SingleProductLanding() {
                     </div>
                   );
                 }) : product && (
-                    <div className="border border-brand-green rounded-2xl p-6 flex flex-col items-center bg-white transition shadow-xl max-w-sm mx-auto w-full relative">
-                      <div className="absolute -top-4 bg-brand-green text-white px-6 py-1 rounded-full text-sm font-bold">একমাত্র পণ্য</div>
-                      <img alt={product.name} className="h-64 object-contain mb-4" src={product.image || '/assets/img/hero.png'} />
-                      <h4 className="text-xl font-bold mb-2 text-center">{product.name}</h4>
-                      <div className="flex items-center gap-2 mb-4">
-                        <span className="text-2xl font-bold text-gray-800">৳{product.price}</span>
-                      </div>
-                      <ul className="text-left space-y-2 mb-6 w-full text-sm">
-                        <li className="flex items-center gap-2">✅ খাঁটি ও কেমিক্যাল মুক্ত</li>
-                        <li className="flex items-center gap-2">✅ ঘানি পদ্ধতিতে ভাঙানো</li>
-                        <li className="flex items-center gap-2">✅ সারা দেশে ডেলিভারি</li>
-                      </ul>
-                      <button
-                        onClick={() => {
-                          const orderSec = document.getElementById('order');
-                          if (orderSec) orderSec.scrollIntoView({ behavior: 'smooth' });
-                        }}
-                        className="w-full bg-brand-green text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition hover:opacity-95"
-                      >
-                        <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                        অর্ডার করুন
-                      </button>
+                  <div className="border border-brand-green rounded-2xl p-6 flex flex-col items-center bg-white transition shadow-xl max-w-sm mx-auto w-full relative">
+                    <div className="absolute -top-4 bg-brand-green text-white px-6 py-1 rounded-full text-sm font-bold">একমাত্র পণ্য</div>
+                    <img alt={product.name} className="h-64 object-contain mb-4" src={product.image || '/assets/img/hero.png'} />
+                    <h4 className="text-xl font-bold mb-2 text-center">{product.name}</h4>
+                    <div className="flex items-center gap-2 mb-4">
+                      <span className="text-2xl font-bold text-gray-800">৳{product.price}</span>
                     </div>
+                    <ul className="text-left space-y-2 mb-6 w-full text-sm">
+                      <li className="flex items-center gap-2">✅ খাঁটি ও কেমিক্যাল মুক্ত</li>
+                      <li className="flex items-center gap-2">✅ ঘানি পদ্ধতিতে ভাঙানো</li>
+                      <li className="flex items-center gap-2">✅ সারা দেশে ডেলিভারি</li>
+                    </ul>
+                    <button
+                      onClick={() => {
+                        const orderSec = document.getElementById('order');
+                        if (orderSec) orderSec.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="w-full bg-brand-green text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2 transition hover:opacity-95"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                      </svg>
+                      অর্ডার করুন
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -1046,30 +1046,30 @@ export default function SingleProductLanding() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold mb-1">আপনার নাম</label>
-                    <input 
-                      type="text" 
-                      required 
-                      placeholder="আপনার নাম লিখুন" 
-                      className="w-full text-sm rounded-lg border-gray-200 focus:border-brand-green focus:ring-brand-green bg-white p-2 border font-medium" 
-                      value={reviewForm.customer_name} 
-                      onChange={e => setReviewForm({ ...reviewForm, customer_name: e.target.value })} 
+                    <input
+                      type="text"
+                      required
+                      placeholder="আপনার নাম লিখুন"
+                      className="w-full text-sm rounded-lg border-gray-200 focus:border-brand-green focus:ring-brand-green bg-white p-2 border font-medium"
+                      value={reviewForm.customer_name}
+                      onChange={e => setReviewForm({ ...reviewForm, customer_name: e.target.value })}
                     />
                   </div>
                   <div>
                     <label className="block text-xs font-bold mb-1">মোবাইল নম্বর (ঐচ্ছিক)</label>
-                    <input 
-                      type="text" 
-                      placeholder="01XXXXXXXXX" 
-                      className="w-full text-sm rounded-lg border-gray-200 focus:border-brand-green focus:ring-brand-green bg-white p-2 border font-medium" 
-                      value={reviewForm.phone} 
-                      onChange={e => setReviewForm({ ...reviewForm, phone: e.target.value })} 
+                    <input
+                      type="text"
+                      placeholder="01XXXXXXXXX"
+                      className="w-full text-sm rounded-lg border-gray-200 focus:border-brand-green focus:ring-brand-green bg-white p-2 border font-medium"
+                      value={reviewForm.phone}
+                      onChange={e => setReviewForm({ ...reviewForm, phone: e.target.value })}
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-bold mb-1">পণ্যটি সিলেক্ট করুন</label>
-                    <select 
+                    <select
                       required
                       className="w-full text-sm rounded-lg border-gray-200 focus:border-brand-green focus:ring-brand-green bg-white p-2 border font-medium"
                       value={reviewForm.product_id}
@@ -1083,7 +1083,7 @@ export default function SingleProductLanding() {
                   </div>
                   <div>
                     <label className="block text-xs font-bold mb-1">রেটিং</label>
-                    <select 
+                    <select
                       required
                       className="w-full text-sm rounded-lg border-gray-200 focus:border-brand-green focus:ring-brand-green bg-white p-2 border font-semibold text-yellow-600"
                       value={reviewForm.rating}
@@ -1099,18 +1099,18 @@ export default function SingleProductLanding() {
                 </div>
                 <div>
                   <label className="block text-xs font-bold mb-1">মতামত / মন্তব্য</label>
-                  <textarea 
-                    required 
-                    rows="3" 
-                    placeholder="আপনার মন্তব্যটি এখানে লিখুন..." 
-                    className="w-full text-sm rounded-lg border-gray-200 focus:border-brand-green focus:ring-brand-green bg-white p-2 border font-medium" 
-                    value={reviewForm.comment} 
-                    onChange={e => setReviewForm({ ...reviewForm, comment: e.target.value })} 
+                  <textarea
+                    required
+                    rows="3"
+                    placeholder="আপনার মন্তব্যটি এখানে লিখুন..."
+                    className="w-full text-sm rounded-lg border-gray-200 focus:border-brand-green focus:ring-brand-green bg-white p-2 border font-medium"
+                    value={reviewForm.comment}
+                    onChange={e => setReviewForm({ ...reviewForm, comment: e.target.value })}
                   />
                 </div>
-                <button 
-                  type="submit" 
-                  disabled={submittingReview} 
+                <button
+                  type="submit"
+                  disabled={submittingReview}
                   className="w-full bg-[#f7b700] hover:bg-yellow-500 text-black font-extrabold py-3 rounded-lg text-base transition shadow-md disabled:opacity-50"
                 >
                   {submittingReview ? 'পাঠানো হচ্ছে...' : 'রিভিউ সাবমিট করুন'}
@@ -1126,27 +1126,44 @@ export default function SingleProductLanding() {
           <div className="container mx-auto px-4">
             <div className="flex flex-col md:flex-row gap-8 md:gap-12 items-center">
               <div className="md:w-4/12 text-center md:text-left">
-                <h3 className="text-4xl font-bold mb-4">এখনই অর্ডার করুন</h3>
-                <p className="text-lg opacity-90 mb-8">খাঁটি সরিষার তেল পেতে নিচের ফর্মটি পূরণ করুন</p>
-                <div className="flex justify-between md:justify-start gap-4 md:gap-8 mb-8">
-                  <div className="flex flex-col items-center">
-                    <div className="bg-white/10 p-3 rounded-full mb-2 flex items-center justify-center w-12 h-12">
-                      <img className="w-6 h-6" src="/assets/img/cod.png" alt="COD" />
-                    </div>
-                    <p className="text-[10px] md:text-xs text-center font-medium">ক্যাশ অন ডেলিভারি</p>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="bg-white/10 p-3 rounded-full mb-2 flex items-center justify-center w-12 h-12">
-                      <img className="w-6 h-6" src="/assets/img/return.png" alt="Return" />
-                    </div>
-                    <p className="text-[10px] md:text-xs text-center font-medium">৩ দিনের রিটার্ন গ্যারান্টি</p>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="bg-white/10 p-3 rounded-full mb-2 flex items-center justify-center w-12 h-12">
-                      <img className="w-6 h-6" src="/assets/img/organic.png" alt="Organic" />
-                    </div>
-                    <p className="text-[10px] md:text-xs text-center font-medium">শতভাগ অর্গানিক পণ্য</p>
-                  </div>
+                <h3 className="text-4xl font-bold mb-4">{webContent.order_section_main?.title || 'এখনই অর্ডার করুন'}</h3>
+                <p className="text-lg opacity-90 mb-8">{webContent.order_section_main?.description || 'খাঁটি সরিষার তেল পেতে নিচের ফর্মটি পূরণ করুন'}</p>
+                <div className="flex justify-between md:justify-start gap-4 md:gap-8 mb-8 flex-wrap">
+                  {webContent.order_section_badge && webContent.order_section_badge.length > 0 ? (
+                    webContent.order_section_badge.map((badge, idx) => (
+                      <div key={idx} className="flex flex-col items-center flex-1 min-w-[80px]">
+                        <div className="bg-white/10 p-3 rounded-full mb-2 flex items-center justify-center w-12 h-12">
+                          {badge.icon && (badge.icon.startsWith('http') || badge.icon.startsWith('/')) ? (
+                            <img className="w-6 h-6 object-contain" src={badge.icon} alt={badge.title} />
+                          ) : (
+                            <span className="text-xl">{badge.icon || '✅'}</span>
+                          )}
+                        </div>
+                        <p className="text-[10px] md:text-xs text-center font-medium leading-tight">{badge.title}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <>
+                      <div className="flex flex-col items-center">
+                        <div className="bg-white/10 p-3 rounded-full mb-2 flex items-center justify-center w-12 h-12">
+                          <img className="w-6 h-6" src="/assets/img/cod.png" alt="COD" />
+                        </div>
+                        <p className="text-[10px] md:text-xs text-center font-medium">ক্যাশ অন ডেলিভারি</p>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <div className="bg-white/10 p-3 rounded-full mb-2 flex items-center justify-center w-12 h-12">
+                          <img className="w-6 h-6" src="/assets/img/return.png" alt="Return" />
+                        </div>
+                        <p className="text-[10px] md:text-xs text-center font-medium">৩ দিনের রিটার্ন গ্যারান্টি</p>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <div className="bg-white/10 p-3 rounded-full mb-2 flex items-center justify-center w-12 h-12">
+                          <img className="w-6 h-6" src="/assets/img/organic.png" alt="Organic" />
+                        </div>
+                        <p className="text-[10px] md:text-xs text-center font-medium">শতভাগ অর্গানিক পণ্য</p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="md:w-5/12 w-full">
@@ -1231,7 +1248,7 @@ export default function SingleProductLanding() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                               <label className="block text-xs font-bold text-gray-600 mb-1.5">পেমেন্ট মেথড</label>
-                              <select 
+                              <select
                                 className="w-full bg-white border border-gray-300 rounded-lg p-2.5 text-xs outline-none cursor-pointer font-semibold"
                                 value={advancePaymentInfo.advance_payment_method}
                                 onChange={e => setAdvancePaymentInfo({ ...advancePaymentInfo, advance_payment_method: e.target.value })}
@@ -1245,7 +1262,7 @@ export default function SingleProductLanding() {
                             </div>
                             <div>
                               <label className="block text-xs font-bold text-gray-600 mb-1.5">Transaction ID (TrxID)</label>
-                              <input 
+                              <input
                                 required
                                 type="text"
                                 placeholder="e.g. 9J283KSK2J"
@@ -1269,7 +1286,9 @@ export default function SingleProductLanding() {
                 </div>
               </div>
               <div className="hidden md:flex md:w-3/12 justify-center items-center">
-                {selectedVariant ? (
+                {webContent.order_section_main?.image ? (
+                  <img alt="Order Promotion" className="max-h-[400px] w-auto object-contain drop-shadow-2xl rounded-xl" src={webContent.order_section_main.image} />
+                ) : selectedVariant ? (
                   <img alt={product?.name} className="max-h-[400px] w-auto object-contain drop-shadow-2xl" src={getVariantDisplayMeta(selectedVariant.name).img} />
                 ) : product?.image ? (
                   <img alt={product.name} className="max-h-[400px] w-auto object-contain drop-shadow-2xl rounded-xl" src={product.image} />
@@ -1318,11 +1337,11 @@ export default function SingleProductLanding() {
               <h3 className="text-xl font-bold text-brand-green">{settings.otp_type === 'email' ? 'ইমেইল ভেরিফিকেশন' : 'মোবাইল নম্বর ভেরিফিকেশন'}</h3>
               <button onClick={() => setShowOtpModal(false)} className="text-gray-400 hover:text-gray-600">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            
+
             <p className="text-sm text-gray-600 mb-6 leading-relaxed">
               {settings.otp_type === 'email' ? (
                 <>আপনার <strong>{form.email}</strong> ইমেইলে একটি ওটিপি (OTP) পাঠানো হয়েছে। ওটিপি কোডটি নিচের বক্সে লিখুন।</>

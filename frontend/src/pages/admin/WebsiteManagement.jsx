@@ -27,13 +27,15 @@ export default function WebsiteManagement() {
   // Data State
   const [data, setData] = useState({
     about_main: { id: null, title: '', description: '', image: '' },
+    order_section_main: { id: null, title: '', description: '', image: '' },
     about_feature: [],
     why_choose_reason: [],
     self_branding_point: [],
     our_process_step: [],
     product_advantage: [],
     usage_tip: [],
-    trust_badge: []
+    trust_badge: [],
+    order_section_badge: []
   });
 
   // Modal / Form States
@@ -189,6 +191,55 @@ export default function WebsiteManagement() {
     }
   };
 
+  const handleOrderSectionMainImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const token = localStorage.getItem('admin_token');
+      const res = await axios.post(`${API_URL}/api/admin/upload`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setData(prev => ({ 
+        ...prev, 
+        order_section_main: { ...prev.order_section_main, image: res.data.url } 
+      }));
+      toast.success('Order section image uploaded successfully!');
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      toast.error('Failed to upload image.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSaveOrderSectionMain = async () => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      const res = await axios.post(`${API_URL}/api/admin/website-content`, {
+        type: 'order_section_main',
+        title: data.order_section_main.title,
+        description: data.order_section_main.description,
+        image: data.order_section_main.image
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      toast.success('Order section main content saved successfully!');
+      fetchData();
+    } catch (err) {
+      console.error('Error saving order section main:', err);
+      toast.error('Failed to save order section settings.');
+    }
+  };
+
   const handleDeleteItem = async (id) => {
     if (!window.confirm('Are you sure you want to delete this content item?')) return;
     try {
@@ -213,7 +264,8 @@ export default function WebsiteManagement() {
     { id: 'our_process', label: 'Journey (আমাদের তেলের যাত্রা)', icon: Sparkles },
     { id: 'product_advantage', label: 'Advantage (স্বাস্থ্য উপকারিতা)', icon: Heart },
     { id: 'usage_tip', label: 'How to use (ব্যবহার নির্দেশিকা)', icon: Flame },
-    { id: 'trust_badge', label: 'Trust Badges (ট্রাস্ট ব্যাজ)', icon: ShieldAlert }
+    { id: 'trust_badge', label: 'Trust Badges (ট্রাস্ট ব্যাজ)', icon: ShieldAlert },
+    { id: 'order_section', label: 'Order Section (অর্ডার সেকশন)', icon: Utensils }
   ];
 
   if (loading && !data.about_main.title) {
@@ -548,7 +600,7 @@ export default function WebsiteManagement() {
             </div>
           )}
 
-          {activeTab === 'trust_badge' && (
+        {activeTab === 'trust_badge' && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 xl:p-8 flex-grow">
               <div className="flex justify-between items-center mb-6">
                 <div>
@@ -583,6 +635,105 @@ export default function WebsiteManagement() {
                 {data.trust_badge.length === 0 && (
                   <div className="col-span-1 md:col-span-2 text-center py-12 text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed">No trust badges configured. Add one above.</div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'order_section' && (
+            <div className="space-y-6">
+              <div className="border-b pb-4 mb-6">
+                <h2 className="text-lg font-bold text-gray-800">অর্ডার সেকশন (Order Section)</h2>
+                <p className="text-xs text-gray-500">Manage the order form section's title, subtitle, image and icon badges.</p>
+              </div>
+
+              <div className="space-y-4 max-w-3xl">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">শিরোনাম (Title)</label>
+                  <input
+                    type="text"
+                    className="w-full border rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-[#2d4b3e]"
+                    value={data.order_section_main.title}
+                    placeholder="e.g. এখনই অর্ডার করুন"
+                    onChange={e => setData({ ...data, order_section_main: { ...data.order_section_main, title: e.target.value } })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">সাবটাইটেল (Subtitle)</label>
+                  <textarea
+                    rows="2"
+                    className="w-full border rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-[#2d4b3e]"
+                    value={data.order_section_main.description}
+                    placeholder="e.g. খাঁটি সরিষার তেল পেতে নিচের ফর্মটি পূরণ করুন"
+                    onChange={e => setData({ ...data, order_section_main: { ...data.order_section_main, description: e.target.value } })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Product Image (Right side image override)</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleOrderSectionMainImageUpload}
+                    className="w-full text-sm mb-2"
+                  />
+                  <p className="text-xs text-gray-400 mb-2">Leave blank to use the actual product/variant image automatically.</p>
+                  {uploading && <span className="text-blue-500 text-xs font-bold">Uploading...</span>}
+                  {data.order_section_main.image && (
+                    <div className="relative inline-block mt-2">
+                      <img src={data.order_section_main.image} alt="Order Section" className="h-32 object-contain rounded border p-1" />
+                      <button 
+                        onClick={() => setData({ ...data, order_section_main: { ...data.order_section_main, image: '' } })}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow"
+                        title="Remove Image"
+                        type="button"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-end">
+                  <button onClick={handleSaveOrderSectionMain} className="flex items-center gap-2 bg-[#2d4b3e] text-white px-5 py-2 rounded-lg font-bold hover:opacity-90 transition shadow-sm">
+                    <Save size={16} /> Save Order Section Text
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-t pt-6 mt-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-bold text-gray-800">Icon Badges</h3>
+                  <button onClick={() => handleOpenAddModal('order_section_badge')} className="flex items-center gap-1.5 bg-[#2d4b3e] text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90 transition shadow-sm">
+                    <Plus size={16} /> Add Icon Badge
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {data.order_section_badge.map((item) => (
+                    <div key={item.id} className="border rounded-xl p-5 bg-white shadow-sm flex flex-col justify-between hover:shadow-md transition">
+                      <div>
+                        <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center text-[#2d4b3e] mb-4 border border-green-100 font-bold">
+                           {/* Check if it is a URL or a text emoji icon */}
+                           {item.icon && (item.icon.startsWith('http') || item.icon.startsWith('/')) ? (
+                             <img src={item.icon} alt={item.title} className="w-6 h-6 object-contain" />
+                           ) : (
+                             <span className="text-2xl">{item.icon}</span>
+                           )}
+                        </div>
+                        <h4 className="font-bold text-base mb-1 text-gray-800">{item.title}</h4>
+                      </div>
+                      <div className="flex justify-end gap-2 border-t pt-3 mt-4">
+                        <button onClick={() => handleOpenEditModal(item)} className="p-1 text-blue-600 hover:bg-blue-50 rounded transition" title="Edit">
+                          <Edit size={16} />
+                        </button>
+                        <button onClick={() => handleDeleteItem(item.id)} className="p-1 text-red-600 hover:bg-red-50 rounded transition" title="Delete">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {data.order_section_badge.length === 0 && (
+                    <div className="col-span-3 text-center py-12 text-xs text-gray-400">No icon badges configured. Default hardcoded badges will be shown.</div>
+                  )}
+                </div>
               </div>
             </div>
           )}
