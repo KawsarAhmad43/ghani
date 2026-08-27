@@ -404,7 +404,7 @@ export default function SingleProductLanding() {
                 return (
                   <div
                     key={banner.id}
-                    className={`w-full transition-all duration-1000 ease-in-out absolute inset-0 flex items-center ${isActive ? 'opacity-100 translate-x-0 z-10' : 'opacity-0 translate-x-4 pointer-events-none z-0'
+                    className={`w-full transition-all duration-1000 ease-in-out flex items-center ${isActive ? 'relative opacity-100 translate-x-0 z-10' : 'absolute inset-0 opacity-0 translate-x-4 pointer-events-none z-0'
                       }`}
                   >
                     {isActive && renderBannerContent(banner)}
