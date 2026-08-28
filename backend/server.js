@@ -311,6 +311,34 @@ async function setupTables(db) {
         `);
 
         await db.query(`
+            CREATE TABLE IF NOT EXISTS beneficial_contents (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(255),
+                short_description TEXT,
+                icon VARCHAR(255),
+                detailed_title VARCHAR(255),
+                detailed_short_description TEXT,
+                detailed_image TEXT,
+                detailed_content TEXT,
+                key_points JSON,
+                benefits_points JSON,
+                status INT DEFAULT 1,
+                sort_order INT DEFAULT 0
+            )
+        `);
+
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS how_to_use (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(255),
+                short_details TEXT,
+                icon VARCHAR(255),
+                status INT DEFAULT 1,
+                sort_order INT DEFAULT 0
+            )
+        `);
+
+        await db.query(`
             CREATE TABLE IF NOT EXISTS quicklinks (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 title VARCHAR(255) NOT NULL,
@@ -358,6 +386,11 @@ async function setupTables(db) {
         `);
 
         // Alter tables
+        try {
+            await db.query('ALTER TABLE website_content ADD COLUMN status INT DEFAULT 1');
+        } catch (err) {
+            // ignore
+        }
         try {
             await db.query('ALTER TABLE banners ADD COLUMN subtitle VARCHAR(255)');
         } catch (err) {
@@ -653,13 +686,33 @@ async function setupTables(db) {
                 ('our_process_step', '২. মানসম্মত বীজ সংগ্রহ', NULL, NULL, '/assets/img/songroho.png', 2),
                 ('our_process_step', '৩. ঘানি ভাঙানো', NULL, NULL, '/assets/img/vangano.png', 3),
                 ('our_process_step', '৪. বিশুদ্ধ তেল প্রস্তুত', NULL, NULL, '/assets/img/oil.png', 4),
-                ('product_advantage', 'হার্টের যত্ন', 'ওমেগা-৩ হার্ট সুস্থ রাখে', 'Heart', NULL, 1),
-                ('product_advantage', 'ত্বক ও চুল', 'প্রাকৃতিক ময়েশ্চারাইজার', 'Smile', NULL, 2),
-                ('product_advantage', 'পরিপাক শক্তি', 'হজমে সাহায্য করে', 'Utensils', NULL, 3),
-                ('usage_tip', 'রান্নায় ব্যবহার', 'যেকোনো ভর্তা, আচার বা ঝাল খাবারে আমাদের তেলের অতুলনীয় ঝাঁঝ ও স্বাদ যোগ করুন। এটি উচ্চ তাপে রান্নার জন্য একদম নিরাপদ।', 'Flame', NULL, 1),
-                ('usage_tip', 'ত্বক ও চুলের যত্ন', 'চুলের বৃদ্ধির জন্য নিয়মিত মালিশ করুন। শীতকালে ত্বকের শুষ্কতা দূর করতে সরাসরি শরীরে ব্যবহার করা যায়।', 'Sparkles', NULL, 2)
+                ('purity_process_main', 'আমাদের ঐতিহ্যবাহী ঘানি পদ্ধতি', 'আমরা কোনো কৃত্রিম যন্ত্র বা তাপ ব্যবহার করি না। কাঠের ঘানিতে খুব ধীরগতিতে সরিষা পিষে তেল বের করা হয়, ফলে তেলের প্রাকৃতিক পুষ্টিগুণ, ঝাঁঝ এবং সুগন্ধ অক্ষুণ্ণ থাকে। এই পদ্ধতিটি শত বছরের পুরনো বাংলার ঐতিহ্য যা স্বাস্থ্যের জন্য সেরা।', NULL, NULL, 0),
+                ('purity_process_point', 'কোনো রিফাইনিং নেই', NULL, NULL, NULL, 1),
+                ('purity_process_point', 'প্রাকৃতিক ঝাঁঝ সংরক্ষিত', NULL, NULL, NULL, 2),
+                ('purity_process_point', '১০০% অ্যান্টি-অক্সিডেন্ট সমৃদ্ধ', NULL, NULL, NULL, 3)
             `);
             console.log('Seeded default website content.');
+        }
+
+        const [beneficialCount] = await db.query('SELECT COUNT(*) as count FROM beneficial_contents');
+        if (beneficialCount[0].count === 0) {
+            await db.query(`
+                INSERT INTO beneficial_contents (title, short_description, icon, detailed_title, detailed_short_description, detailed_image, detailed_content, key_points, benefits_points, status, sort_order) VALUES
+                ('হার্টের যত্ন', 'ওমেগা-৩ হার্ট সুস্থ রাখে', 'Heart', 'হার্টের যত্নে খাঁটি সরিষার তেল', 'সরিষার তেলে থাকা ওমেগা-৩ ও ওমেগা-৬ ফ্যাটি অ্যাসিড হার্টের স্বাস্থ্যের জন্য অত্যন্ত উপকারী।', NULL, '<p>আমাদের খাঁটি সরিষার তেল কোলেস্টেরলের মাত্রা নিয়ন্ত্রণে রাখতে সাহায্য করে। এটি হার্ট অ্যাটাক এবং স্ট্রোকের ঝুঁকি কমায়।</p>', '["কোলেস্টেরল কমায়", "রক্তচাপ নিয়ন্ত্রণ করে"]', '["১০০% প্রাকৃতিক", "কোনো ভেজাল নেই"]', 1, 1),
+                ('ত্বক ও চুল', 'প্রাকৃতিক ময়েশ্চারাইজার', 'Smile', 'ত্বক ও চুলের সুরক্ষায় সরিষার তেল', 'শীতকালে ত্বক ও চুলের রুক্ষতা দূর করতে সরিষার তেলের বিকল্প নেই।', NULL, '<p>ত্বকে ম্যাসাজ করলে রক্ত চলাচল বাড়ে এবং ত্বক উজ্জ্বল হয়। চুলে ব্যবহারে খুশকি কমে এবং চুল পড়া রোধ হয়।</p>', '["ত্বক উজ্জ্বল করে", "চুল পড়া কমায়"]', '["প্রাকৃতিক ময়েশ্চারাইজার", "অ্যান্টি-ব্যাকটেরিয়াল"]', 1, 2),
+                ('পরিপাক শক্তি', 'হজমে সাহায্য করে', 'Utensils', 'হজমশক্তি বৃদ্ধিতে সরিষার তেল', 'সরিষার তেল পাকস্থলীতে পরিপাক রস নিঃসরণে উদ্দীপনা জোগায়।', NULL, '<p>এটি ক্ষুধা বাড়ায় এবং হজম প্রক্রিয়ায় সহায়তা করে। নিয়মিত সরিষার তেল খেলে গ্যাস্ট্রিকের সমস্যাও অনেকটাই কমে যায়।</p>', '["হজমশক্তি বাড়ায়", "ক্ষুধা বৃদ্ধি করে"]', '["সহজপাচ্য", "প্রাকৃতিক গুণাগুণ সম্পন্ন"]', 1, 3)
+            `);
+            console.log('Seeded default beneficial contents.');
+        }
+
+        const [howToUseCount] = await db.query('SELECT COUNT(*) as count FROM how_to_use');
+        if (howToUseCount[0].count === 0) {
+            await db.query(`
+                INSERT INTO how_to_use (title, short_details, icon, status, sort_order) VALUES
+                ('রান্নায় ব্যবহার', 'যেকোনো ভর্তা, আচার বা ঝাল খাবারে আমাদের তেলের অতুলনীয় ঝাঁঝ ও স্বাদ যোগ করুন। এটি উচ্চ তাপে রান্নার জন্য একদম নিরাপদ।', 'Flame', 1, 1),
+                ('ত্বক ও চুলের যত্ন', 'চুলের বৃদ্ধির জন্য নিয়মিত মালিশ করুন। শীতকালে ত্বকের শুষ্কতা দূর করতে সরাসরি শরীরে ব্যবহার করা যায়।', 'Sparkles', 1, 2)
+            `);
+            console.log('Seeded default how to use contents.');
         }
 
     } catch (err) {
@@ -3086,6 +3139,114 @@ app.post('/api/coupons/validate', async (req, res) => {
             return res.status(400).json({ error: 'This coupon has expired' });
         }
         res.json({ success: true, coupon });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+// Beneficial Contents API
+app.get('/api/beneficial-contents', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM beneficial_contents WHERE status = 1 ORDER BY sort_order ASC');
+        res.json(rows);
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.get('/api/admin/beneficial-contents', requireAdmin, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM beneficial_contents ORDER BY sort_order ASC');
+        res.json(rows);
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.post('/api/admin/beneficial-contents', requireAdmin, async (req, res) => {
+    const { title, short_description, icon, detailed_title, detailed_short_description, detailed_image, detailed_content, key_points, benefits_points, status, sort_order } = req.body;
+    try {
+        const query = 'INSERT INTO beneficial_contents (title, short_description, icon, detailed_title, detailed_short_description, detailed_image, detailed_content, key_points, benefits_points, status, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+        await pool.query(query, [
+            title, short_description, icon, detailed_title, detailed_short_description, detailed_image, detailed_content, 
+            JSON.stringify(key_points || []), JSON.stringify(benefits_points || []), status !== undefined ? status : 1, sort_order || 0
+        ]);
+        res.json({ success: true, message: 'Beneficial content created successfully' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.put('/api/admin/beneficial-contents/:id', requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { title, short_description, icon, detailed_title, detailed_short_description, detailed_image, detailed_content, key_points, benefits_points, status, sort_order } = req.body;
+    try {
+        const query = 'UPDATE beneficial_contents SET title=?, short_description=?, icon=?, detailed_title=?, detailed_short_description=?, detailed_image=?, detailed_content=?, key_points=?, benefits_points=?, status=?, sort_order=? WHERE id=?';
+        await pool.query(query, [
+            title, short_description, icon, detailed_title, detailed_short_description, detailed_image, detailed_content, 
+            JSON.stringify(key_points || []), JSON.stringify(benefits_points || []), status, sort_order, id
+        ]);
+        res.json({ success: true, message: 'Beneficial content updated successfully' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.delete('/api/admin/beneficial-contents/:id', requireAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM beneficial_contents WHERE id=?', [req.params.id]);
+        res.json({ success: true, message: 'Beneficial content deleted successfully' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+// How To Use API
+app.get('/api/how-to-use', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM how_to_use WHERE status = 1 ORDER BY sort_order ASC');
+        res.json(rows);
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.get('/api/admin/how-to-use', requireAdmin, async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM how_to_use ORDER BY sort_order ASC');
+        res.json(rows);
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.post('/api/admin/how-to-use', requireAdmin, async (req, res) => {
+    const { title, short_details, icon, status, sort_order } = req.body;
+    try {
+        const query = 'INSERT INTO how_to_use (title, short_details, icon, status, sort_order) VALUES (?, ?, ?, ?, ?)';
+        await pool.query(query, [title, short_details, icon, status !== undefined ? status : 1, sort_order || 0]);
+        res.json({ success: true, message: 'How To Use item created successfully' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.put('/api/admin/how-to-use/:id', requireAdmin, async (req, res) => {
+    const { id } = req.params;
+    const { title, short_details, icon, status, sort_order } = req.body;
+    try {
+        const query = 'UPDATE how_to_use SET title=?, short_details=?, icon=?, status=?, sort_order=? WHERE id=?';
+        await pool.query(query, [title, short_details, icon, status, sort_order, id]);
+        res.json({ success: true, message: 'How To Use item updated successfully' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.delete('/api/admin/how-to-use/:id', requireAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM how_to_use WHERE id=?', [req.params.id]);
+        res.json({ success: true, message: 'How To Use item deleted successfully' });
     } catch (err) {
         handleServerError(res, err);
     }

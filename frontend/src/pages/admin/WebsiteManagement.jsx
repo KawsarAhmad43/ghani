@@ -3,6 +3,8 @@ import axios from 'axios';
 import { Save, Plus, Trash2, Edit, HelpCircle, Image as ImageIcon, Check, Info, Globe, Sparkles, Heart, Flame, ShieldAlert, Award, Smile, Utensils } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import API_URL from '../../utils/api';
+import BeneficialContentTab from './BeneficialContentTab';
+import HowToUseTab from './HowToUseTab';
 
 const PRESET_ICONS = [
   { char: '❤️', label: 'Heart (❤️)' },
@@ -28,6 +30,7 @@ export default function WebsiteManagement() {
   const [data, setData] = useState({
     about_main: { id: null, title: '', description: '', image: '' },
     order_section_main: { id: null, title: '', description: '', image: '' },
+    purity_process_main: { id: null, title: '', description: '', image: '' },
     about_feature: [],
     why_choose_reason: [],
     self_branding_point: [],
@@ -35,8 +38,12 @@ export default function WebsiteManagement() {
     product_advantage: [],
     usage_tip: [],
     trust_badge: [],
-    order_section_badge: []
+    order_section_badge: [],
+    purity_process_point: []
   });
+
+  const [beneficialContents, setBeneficialContents] = useState([]);
+  const [howToUseData, setHowToUseData] = useState([]);
 
   // Modal / Form States
   const [editingItem, setEditingItem] = useState(null);
@@ -57,8 +64,23 @@ export default function WebsiteManagement() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem('admin_token');
+      const authHeader = token ? { headers: { 'Authorization': `Bearer ${token}` } } : {};
+      
       const res = await axios.get(`${API_URL}/api/website-content`);
-      setData(res.data);
+      setData({
+        ...res.data,
+        purity_process_main: res.data.purity_process_main || { id: null, title: '', description: '', image: '' },
+        purity_process_point: res.data.purity_process_point || []
+      });
+
+      const [bcRes, htuRes] = await Promise.all([
+        axios.get(`${API_URL}/api/admin/beneficial-contents`, authHeader).catch(() => ({ data: [] })),
+        axios.get(`${API_URL}/api/admin/how-to-use`, authHeader).catch(() => ({ data: [] }))
+      ]);
+      setBeneficialContents(bcRes.data);
+      setHowToUseData(htuRes.data);
+
     } catch (err) {
       console.error('Error fetching website content:', err);
       toast.error('Failed to load website content settings.');
@@ -240,6 +262,27 @@ export default function WebsiteManagement() {
     }
   };
 
+  const handleSavePurityProcessMain = async () => {
+    try {
+      const token = localStorage.getItem('admin_token');
+      await axios.post(`${API_URL}/api/admin/website-content`, {
+        type: 'purity_process_main',
+        title: data.purity_process_main.title,
+        description: data.purity_process_main.description,
+        image: ''
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      toast.success('Purity process main content saved successfully!');
+      fetchData();
+    } catch (err) {
+      console.error('Error saving purity process main:', err);
+      toast.error('Failed to save settings.');
+    }
+  };
+
   const handleDeleteItem = async (id) => {
     if (!window.confirm('Are you sure you want to delete this content item?')) return;
     try {
@@ -263,9 +306,12 @@ export default function WebsiteManagement() {
     { id: 'self_branding', label: 'Self Branding (আসল তেল?)', icon: ShieldAlert },
     { id: 'our_process', label: 'Journey (আমাদের তেলের যাত্রা)', icon: Sparkles },
     { id: 'product_advantage', label: 'Advantage (স্বাস্থ্য উপকারিতা)', icon: Heart },
-    { id: 'usage_tip', label: 'How to use (ব্যবহার নির্দেশিকা)', icon: Flame },
+    { id: 'usage_tip', label: 'How to use (ব্যবহার নির্দেশিকা - Homepage)', icon: Flame },
     { id: 'trust_badge', label: 'Trust Badges (ট্রাস্ট ব্যাজ)', icon: ShieldAlert },
-    { id: 'order_section', label: 'Order Section (অর্ডার সেকশন)', icon: Utensils }
+    { id: 'order_section', label: 'Order Section (অর্ডার সেকশন)', icon: Utensils },
+    { id: 'purity_process', label: 'Product Details (Left)', icon: Sparkles },
+    { id: 'beneficial_contents', label: 'Beneficial Contents (Right)', icon: Heart },
+    { id: 'how_to_use', label: 'How To Use (Product Page)', icon: Flame }
   ];
 
   if (loading && !data.about_main.title) {
@@ -736,6 +782,83 @@ export default function WebsiteManagement() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Tab: Purity Process (Product Details Left) */}
+          {activeTab === 'purity_process' && (
+            <div className="space-y-6">
+              <div className="border-b pb-4 mb-6">
+                <h2 className="text-lg font-bold text-gray-800">Product Details (Left Side Content)</h2>
+                <p className="text-xs text-gray-500">Manage the left-side content shown on the product details page (Title, description, 3 points).</p>
+              </div>
+
+              <div className="space-y-4 max-w-3xl">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Title</label>
+                  <input
+                    type="text"
+                    className="w-full border rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-[#2d4b3e]"
+                    value={data.purity_process_main.title}
+                    onChange={e => setData({ ...data, purity_process_main: { ...data.purity_process_main, title: e.target.value } })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Short Description</label>
+                  <textarea
+                    rows="4"
+                    className="w-full border rounded-lg p-2.5 outline-none focus:ring-1 focus:ring-[#2d4b3e]"
+                    value={data.purity_process_main.description}
+                    onChange={e => setData({ ...data, purity_process_main: { ...data.purity_process_main, description: e.target.value } })}
+                  />
+                </div>
+                <div className="flex justify-end">
+                  <button onClick={handleSavePurityProcessMain} className="flex items-center gap-2 bg-[#2d4b3e] text-white px-5 py-2 rounded-lg font-bold hover:opacity-90 transition shadow-sm">
+                    <Save size={16} /> Save Text
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-t pt-6 mt-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-bold text-gray-800">Key Points (Max 3 shown usually)</h3>
+                  <button onClick={() => handleOpenAddModal('purity_process_point')} className="flex items-center gap-1.5 bg-gray-100 text-[#2d4b3e] px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-200 transition">
+                    <Plus size={14} /> Add Point
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {data.purity_process_point.map((feat) => (
+                    <div key={feat.id} className="p-4 border rounded-xl bg-gray-50 flex items-center justify-between shadow-sm">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-[#2d4b3e]">
+                          <Check size={14} />
+                        </div>
+                        <span className="font-semibold text-sm text-gray-700">{feat.title}</span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleOpenEditModal(feat)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Edit">
+                          <Edit size={16} />
+                        </button>
+                        <button onClick={() => handleDeleteItem(feat.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition" title="Delete">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {data.purity_process_point.length === 0 && (
+                    <div className="col-span-2 text-center py-6 text-xs text-gray-400">No points configured. Add one above.</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'beneficial_contents' && (
+            <BeneficialContentTab items={beneficialContents} fetchData={fetchData} />
+          )}
+
+          {activeTab === 'how_to_use' && (
+            <HowToUseTab items={howToUseData} fetchData={fetchData} />
           )}
 
         </div>

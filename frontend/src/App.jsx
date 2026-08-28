@@ -5,6 +5,7 @@ import API_URL from './utils/api';
 import StoreFront from './pages/StoreFront';
 import Dashboard from './pages/admin/Dashboard';
 import ProductDetails from './pages/ProductDetails';
+import HealthBenefits from './pages/HealthBenefits';
 import Checkout from './pages/Checkout';
 import ThankYou from './pages/ThankYou';
 import MultiProductCatalog from './pages/MultiProductCatalog';
@@ -141,6 +142,7 @@ function App() {
         <Route path="/" element={<StoreFront />} />
         <Route path="/products" element={<MultiProductCatalog />} />
         <Route path="/product/:idOrSlug" element={<ProductDetails />} />
+        <Route path="/health-benefits" element={<HealthBenefits />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/thank-you" element={<ThankYou />} />
         
