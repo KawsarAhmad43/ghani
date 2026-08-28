@@ -1160,7 +1160,7 @@ export default function SingleProductLanding() {
                         <div className="bg-white/10 p-3 rounded-full mb-2 flex items-center justify-center w-12 h-12">
                           <img className="w-6 h-6" src="/assets/img/organic.png" alt="Organic" />
                         </div>
-                        <p className="text-[10px] md:text-xs text-center font-medium">শতভাগ অর্গানিক পণ্য</p>
+                        <p className="text-[10px] md:text-xs text-center font-medium">অর্গানিক পণ্য</p>
                       </div>
                     </>
                   )}

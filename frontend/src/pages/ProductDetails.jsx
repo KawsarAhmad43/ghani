@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { 
-  ChevronRight, ChevronLeft, Star, CheckCircle2, Shield, Sprout, 
-  ShoppingCart, Truck, CreditCard, Clock, Heart, Smile, Utensils, 
-  Flame, Sparkles, HelpCircle 
+import {
+  ChevronRight, ChevronLeft, Star, CheckCircle2, Shield, Sprout,
+  ShoppingCart, Truck, CreditCard, Clock, Heart, Smile, Utensils,
+  Flame, Sparkles, HelpCircle
 } from 'lucide-react';
 import API_URL from '../utils/api';
 import { trackEvent } from '../utils/tracker';
@@ -40,8 +40,17 @@ export default function ProductDetails() {
     usage_tip: [
       { id: 1, icon: 'Flame', title: 'রান্নায় ব্যবহার', description: 'যেকোনো ভর্তা, আচার বা ঝাল খাবারে আমাদের তেলের অতুলনীয় ঝাঁঝ ও স্বাদ যোগ করুন। এটি উচ্চ তাপে রান্নার জন্য একদম নিরাপদ।' },
       { id: 2, icon: 'Sparkles', title: 'ত্বক ও চুলের যত্ন', description: 'চুলের বৃদ্ধির জন্য নিয়মিত মালিশ করুন। শীতকালে ত্বকের শুষ্কতা দূর করতে সরাসরি শরীরে ব্যবহার করা যায়।' }
+    ],
+    purity_process_main: { title: 'আমাদের ঐতিহ্যবাহী ঘানি পদ্ধতি', description: 'আমরা কোনো কৃত্রিম যন্ত্র বা তাপ ব্যবহার করি না। কাঠের ঘানিতে খুব ধীরগতিতে সরিষা পিষে তেল বের করা হয়, ফলে তেলের প্রাকৃতিক পুষ্টিগুণ, ঝাঁঝ এবং সুগন্ধ অক্ষুণ্ণ থাকে। এই পদ্ধতিটি শত বছরের পুরনো বাংলার ঐতিহ্য যা স্বাস্থ্যের জন্য সেরা।' },
+    purity_process_point: [
+      { id: 1, title: 'কোনো রিফাইনিং নেই' },
+      { id: 2, title: 'প্রাকৃতিক ঝাঁঝ সংরক্ষিত' },
+      { id: 3, title: '১০০% অ্যান্টি-অক্সিডেন্ট সমৃদ্ধ' }
     ]
   });
+
+  const [beneficialContents, setBeneficialContents] = useState([]);
+  const [howToUseData, setHowToUseData] = useState([]);
 
   useEffect(() => {
     const updateCartCount = () => {
@@ -79,6 +88,16 @@ export default function ProductDetails() {
       })
       .catch(err => console.error(err));
 
+    // Fetch Beneficial Contents
+    axios.get(`${API_URL}/api/beneficial-contents`)
+      .then(res => setBeneficialContents(res.data || []))
+      .catch(err => console.error(err));
+
+    // Fetch How To Use
+    axios.get(`${API_URL}/api/how-to-use`)
+      .then(res => setHowToUseData(res.data || []))
+      .catch(err => console.error(err));
+
     // Fetch Product Details
     axios.get(`${API_URL}/api/products/${idOrSlug}`)
       .then(res => {
@@ -105,7 +124,7 @@ export default function ProductDetails() {
     if (!product) return;
     const isSingle = settings.store_mode?.toLowerCase() === 'single' || settings.store_mode === 'Single Product';
     const savedCart = JSON.parse(localStorage.getItem('ghani_cart') || '[]');
-    
+
     if (isSingle && savedCart.length > 0) {
       const hasDifferent = savedCart.some(item => item.product_id !== product.id || item.variant_id !== (selectedVariant ? selectedVariant.id : null));
       if (hasDifferent) {
@@ -115,7 +134,7 @@ export default function ProductDetails() {
     }
 
     const finalPrice = selectedVariant ? (selectedVariant.offer_price || selectedVariant.price) : product.price;
-    
+
     trackEvent('InitiateCheckout', {
       content_name: product.name,
       content_ids: [product.id],
@@ -144,7 +163,7 @@ export default function ProductDetails() {
     if (!product) return;
     const isSingle = settings.store_mode?.toLowerCase() === 'single' || settings.store_mode === 'Single Product';
     const savedCart = JSON.parse(localStorage.getItem('ghani_cart') || '[]');
-    
+
     if (isSingle && savedCart.length > 0) {
       const hasDifferent = savedCart.some(item => item.product_id !== product.id || item.variant_id !== (selectedVariant ? selectedVariant.id : null));
       if (hasDifferent) {
@@ -154,7 +173,7 @@ export default function ProductDetails() {
     }
 
     const finalPrice = selectedVariant ? (selectedVariant.offer_price || selectedVariant.price) : product.price;
-    
+
     const cartItem = {
       product_id: product.id,
       name: product.name,
@@ -168,13 +187,13 @@ export default function ProductDetails() {
     };
 
     const existingIndex = savedCart.findIndex(item => item.product_id === cartItem.product_id && item.variant_id === cartItem.variant_id);
-    
+
     if (existingIndex > -1) {
       savedCart[existingIndex].quantity += 1;
     } else {
       savedCart.push(cartItem);
     }
-    
+
     localStorage.setItem('ghani_cart', JSON.stringify(savedCart));
     window.dispatchEvent(new Event('cart-updated'));
     toast.success('পণ্যটি কার্টে যুক্ত হয়েছে!');
@@ -318,19 +337,18 @@ export default function ProductDetails() {
           {/* Left: Product Image Gallery */}
           <div className="flex flex-col gap-4">
             <div className="glass-card rounded-xl overflow-hidden p-4 md:p-8 flex items-center justify-center">
-              <img 
-                alt={product.name} 
-                className="w-full h-auto max-h-[500px] object-contain rounded-lg shadow-sm" 
-                src={getSelectedVariantImage()} 
+              <img
+                alt={product.name}
+                className="w-full h-auto max-h-[500px] object-contain rounded-lg shadow-sm"
+                src={getSelectedVariantImage()}
               />
             </div>
             <div className="flex flex-wrap gap-4">
               {product.image && (
                 <button
                   onClick={() => setSelectedVariant(null)}
-                  className={`w-24 h-24 glass-card rounded-lg overflow-hidden p-1 border-2 transition-all ${
-                    !selectedVariant ? 'border-primary ring-2 ring-primary/20' : 'border-transparent hover:border-primary/50'
-                  }`}
+                  className={`w-24 h-24 glass-card rounded-lg overflow-hidden p-1 border-2 transition-all ${!selectedVariant ? 'border-primary ring-2 ring-primary/20' : 'border-transparent hover:border-primary/50'
+                    }`}
                 >
                   <img alt={product.name} className="w-full h-full object-cover rounded-md" src={product.image} />
                 </button>
@@ -348,9 +366,8 @@ export default function ProductDetails() {
                   <button
                     key={v.id}
                     onClick={() => setSelectedVariant(v)}
-                    className={`w-24 h-24 glass-card rounded-lg overflow-hidden p-1 border-2 transition-all ${
-                      isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-transparent hover:border-primary/50'
-                    }`}
+                    className={`w-24 h-24 glass-card rounded-lg overflow-hidden p-1 border-2 transition-all ${isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-transparent hover:border-primary/50'
+                      }`}
                   >
                     <img alt={v.name} className="w-full h-full object-cover rounded-md" src={img} />
                   </button>
@@ -406,11 +423,10 @@ export default function ProductDetails() {
                       <button
                         key={v.id}
                         onClick={() => setSelectedVariant(v)}
-                        className={`border-2 px-6 py-2 rounded-lg font-bold transition-all ${
-                          isSelected
+                        className={`border-2 px-6 py-2 rounded-lg font-bold transition-all ${isSelected
                             ? 'border-primary text-primary glass-card bg-green-50/50'
                             : 'border-outline-variant text-on-surface-variant hover:border-primary'
-                        }`}
+                          }`}
                       >
                         {v.name}
                       </button>
@@ -450,7 +466,7 @@ export default function ProductDetails() {
             </div>
 
             {/* Quick Trust Signals */}
-            <div className="grid grid-cols-2 gap-4 border-t border-outline-variant/30 pt-8">
+            {/* <div className="grid grid-cols-2 gap-4 border-t border-outline-variant/30 pt-8">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center text-secondary">
                   <Truck className="w-6 h-6 text-[#2d4b3e]" />
@@ -469,7 +485,7 @@ export default function ProductDetails() {
                   <p className="text-[10px] text-on-surface-variant font-medium">Available nationwide</p>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </section>
 
@@ -483,7 +499,7 @@ export default function ProductDetails() {
                   <Clock className="w-5 h-5 text-secondary" />
                   পণ্যের বর্ণনা
                 </h3>
-                <div 
+                <div
                   className="text-on-surface-variant leading-relaxed font-medium description-html-container"
                   dangerouslySetInnerHTML={{ __html: product.description || 'আমাদের এই সরিষার তেল শত বছরের ঐতিহ্যবাহী কাঠের ঘানিতে কোনো তাপ ছাড়াই প্রস্তুত করা হয়। এতে তেলের প্রতিটি বিন্দুতে থাকে খাঁটি পুষ্টি এবং প্রাকৃতিক ঝাঁঝ, যা আপনার খাবারের স্বাদ বাড়িয়ে তুলবে বহু গুণ।' }}
                 />
@@ -515,20 +531,16 @@ export default function ProductDetails() {
           {/* Purity Process */}
           <div className="md:col-span-2 glass-card rounded-3xl p-8 md:p-12 relative overflow-hidden">
             <div className="relative z-10">
-              <h2 className="font-headline-lg text-primary mb-6">আমাদের ঐতিহ্যবাহী ঘানি পদ্ধতি</h2>
+              <h2 className="font-headline-lg text-primary mb-6">{webContent.purity_process_main?.title || 'আমাদের ঐতিহ্যবাহী ঘানি পদ্ধতি'}</h2>
               <p className="text-on-surface-variant mb-8 leading-relaxed max-w-2xl font-medium">
-                আমরা কোনো কৃত্রিম যন্ত্র বা তাপ ব্যবহার করি না। কাঠের ঘানিতে খুব ধীরগতিতে সরিষা পিষে তেল বের করা হয়, ফলে তেলের প্রাকৃতিক পুষ্টিগুণ, ঝাঁঝ এবং সুগন্ধ অক্ষুণ্ণ থাকে। এই পদ্ধতিটি শত বছরের পুরনো বাংলার ঐতিহ্য যা স্বাস্থ্যের জন্য সেরা।
+                {webContent.purity_process_main?.description}
               </p>
               <ul className="space-y-4">
-                <li className="flex items-center gap-3 text-secondary font-bold">
-                  <CheckCircle2 className="w-4 h-4" /> কোনো রিফাইনিং নেই
-                </li>
-                <li className="flex items-center gap-3 text-secondary font-bold">
-                  <CheckCircle2 className="w-4 h-4" /> প্রাকৃতিক ঝাঁঝ সংরক্ষিত
-                </li>
-                <li className="flex items-center gap-3 text-secondary font-bold">
-                  <CheckCircle2 className="w-4 h-4" /> ১০০% অ্যান্টি-অক্সিডেন্ট সমৃদ্ধ
-                </li>
+                {(webContent.purity_process_point || []).slice(0, 3).map((point) => (
+                  <li key={point.id} className="flex items-center gap-3 text-secondary font-bold">
+                    <CheckCircle2 className="w-4 h-4" /> {point.title}
+                  </li>
+                ))}
               </ul>
             </div>
             <div className="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-x-1/4 translate-y-1/4">
@@ -540,7 +552,7 @@ export default function ProductDetails() {
             <div>
               <h3 className="font-headline-lg mb-6">স্বাস্থ্য উপকারিতা</h3>
               <ul className="space-y-6">
-                {webContent.product_advantage.map((item) => (
+                {(beneficialContents.length > 0 ? beneficialContents.slice(0, 3) : webContent.product_advantage.slice(0, 3)).map((item) => (
                   <li key={item.id} className="flex gap-4">
                     {item.icon === 'Heart' && <Heart className="w-6 h-6 text-primary-fixed" />}
                     {item.icon === 'Smile' && <Smile className="w-6 h-6 text-primary-fixed" />}
@@ -548,15 +560,15 @@ export default function ProductDetails() {
                     {!['Heart', 'Smile', 'Utensils'].includes(item.icon) && <span className="text-xl">{item.icon}</span>}
                     <div>
                       <p className="font-bold">{item.title}</p>
-                      <p className="text-sm opacity-80 font-medium">{item.description}</p>
+                      <p className="text-sm opacity-80 font-medium">{item.short_description || item.description}</p>
                     </div>
                   </li>
                 ))}
               </ul>
             </div>
-            <button className="mt-8 text-sm font-bold flex items-center gap-2 group">
+            <Link to="/health-benefits" className="mt-8 text-sm font-bold flex items-center gap-2 group hover:text-primary-fixed transition">
               আরও জানুন <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </button>
+            </Link>
           </div>
         </section>
 
@@ -564,7 +576,7 @@ export default function ProductDetails() {
         <section className="mb-24">
           <h2 className="font-headline-lg text-primary text-center mb-12">ব্যবহার নির্দেশিকা</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {webContent.usage_tip.map((item) => (
+            {(howToUseData.length > 0 ? howToUseData : webContent.usage_tip).map((item) => (
               <div key={item.id} className="glass-card p-8 rounded-2xl flex gap-6 items-start">
                 <div className="bg-secondary/10 p-4 rounded-xl text-secondary flex items-center justify-center">
                   {item.icon === 'Flame' && <Flame className="w-8 h-8 text-[#2d4b3e]" />}
@@ -573,7 +585,7 @@ export default function ProductDetails() {
                 </div>
                 <div>
                   <h4 className="font-bold text-lg mb-2">{item.title}</h4>
-                  <p className="text-on-surface-variant font-medium">{item.description}</p>
+                  <p className="text-on-surface-variant font-medium">{item.short_details || item.description}</p>
                 </div>
               </div>
             ))}
