@@ -18,6 +18,9 @@ export default function CustomerDashboard() {
   const [products, setProducts] = useState([]);
   const [reviewForm, setReviewForm] = useState({ product_id: '', rating: 5, comment: '' });
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [updatingProfile, setUpdatingProfile] = useState(false);
+
 
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState(null);
@@ -80,6 +83,42 @@ export default function CustomerDashboard() {
         }
       })
       .catch(console.error);
+  };
+
+  const handleProfileUpdate = async (e) => {
+    e.preventDefault();
+    setUpdatingProfile(true);
+    try {
+      const res = await axios.put(`${API_URL}/api/customer/profile/${user.id}`, {
+        name: user.name, email: user.email, phone: user.phone
+      });
+      toast.success(res.data.message || 'Profile updated successfully');
+      localStorage.setItem('customer_user', JSON.stringify({ ...user, name: user.name, email: user.email, phone: user.phone }));
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to update profile');
+    } finally {
+      setUpdatingProfile(false);
+    }
+  };
+
+  const handlePasswordUpdate = async (e) => {
+    e.preventDefault();
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      return toast.error('Passwords do not match');
+    }
+    setUpdatingProfile(true);
+    try {
+      const res = await axios.put(`${API_URL}/api/customer/password/${user.id}`, {
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword
+      });
+      toast.success(res.data.message || 'Password updated successfully');
+      setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Failed to update password');
+    } finally {
+      setUpdatingProfile(false);
+    }
   };
 
   const handleLogout = () => {
@@ -397,21 +436,47 @@ export default function CustomerDashboard() {
             )}
 
             {activeTab === 'profile' && (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-xl font-bold mb-6">My Profile</h2>
-                <div className="space-y-4 max-w-md">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                    <input type="text" className="w-full border rounded-lg p-2 bg-gray-50" value={user.name} readOnly />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                    <input type="text" className="w-full border rounded-lg p-2 bg-gray-50" value={user.phone} readOnly />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input type="text" className="w-full border rounded-lg p-2 bg-gray-50" value={user.email || 'N/A'} readOnly />
-                  </div>
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <h2 className="text-xl font-bold mb-6">My Profile</h2>
+                  <form onSubmit={handleProfileUpdate} className="space-y-4 max-w-md">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                      <input type="text" className="w-full border rounded-lg p-2 focus:outline-[#2d4b3e]" value={user.name || ''} onChange={e => setUser({...user, name: e.target.value})} required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                      <input type="text" className="w-full border rounded-lg p-2 focus:outline-[#2d4b3e]" value={user.phone || ''} onChange={e => setUser({...user, phone: e.target.value})} required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                      <input type="email" className="w-full border rounded-lg p-2 focus:outline-[#2d4b3e]" value={user.email || ''} onChange={e => setUser({...user, email: e.target.value})} />
+                    </div>
+                    <button type="submit" disabled={updatingProfile} className="bg-[#2d4b3e] text-white px-6 py-2 rounded-lg font-bold hover:opacity-90 disabled:opacity-50">
+                      {updatingProfile ? 'Updating...' : 'Update Profile'}
+                    </button>
+                  </form>
+                </div>
+
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <h2 className="text-xl font-bold mb-6">Change Password</h2>
+                  <form onSubmit={handlePasswordUpdate} className="space-y-4 max-w-md">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
+                      <input type="password" required className="w-full border rounded-lg p-2 focus:outline-[#2d4b3e]" value={passwords.currentPassword} onChange={e => setPasswords({...passwords, currentPassword: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                      <input type="password" required minLength={6} className="w-full border rounded-lg p-2 focus:outline-[#2d4b3e]" value={passwords.newPassword} onChange={e => setPasswords({...passwords, newPassword: e.target.value})} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                      <input type="password" required minLength={6} className="w-full border rounded-lg p-2 focus:outline-[#2d4b3e]" value={passwords.confirmPassword} onChange={e => setPasswords({...passwords, confirmPassword: e.target.value})} />
+                    </div>
+                    <button type="submit" disabled={updatingProfile} className="bg-[#2d4b3e] text-white px-6 py-2 rounded-lg font-bold hover:opacity-90 disabled:opacity-50">
+                      {updatingProfile ? 'Updating...' : 'Update Password'}
+                    </button>
+                  </form>
                 </div>
               </div>
             )}
