@@ -2754,6 +2754,49 @@ app.post('/api/admin/orders/forward', async (req, res) => {
     }
 });
 
+// --- Customer Profile APIs ---
+app.put('/api/customer/profile/:id', async (req, res) => {
+    const { id } = req.params;
+    const { name, email, phone } = req.body;
+    try {
+        // Check for duplicate email or phone in other accounts
+        const [existing] = await pool.query('SELECT id FROM users WHERE (email = ? OR phone = ?) AND id != ?', [email, phone, id]);
+        if (existing.length > 0) {
+            return res.status(400).json({ error: 'This email or phone number is already used by another account.' });
+        }
+        
+        await pool.query('UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?', [name, email, phone, id]);
+        res.json({ success: true, message: 'Profile updated successfully' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.put('/api/customer/password/:id', async (req, res) => {
+    const { id } = req.params;
+    const { currentPassword, newPassword } = req.body;
+    try {
+        const [rows] = await pool.query('SELECT password FROM users WHERE id = ?', [id]);
+        if (rows.length === 0) return res.status(404).json({ error: 'User not found' });
+        
+        const user = rows[0];
+        let isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch && currentPassword === user.password) {
+            isMatch = true; // Support legacy plain text passwords during migration
+        }
+
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+        }
+
+        const newHash = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE users SET password = ? WHERE id = ?', [newHash, id]);
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
 // --- Customer Order APIs ---
 app.get('/api/customer/orders/:phone', async (req, res) => {
     try {
@@ -2911,6 +2954,58 @@ app.delete('/api/admin/reviews/:id', async (req, res) => {
 });
 
 // --- Admin User APIs ---
+
+// Admin Profile APIs
+app.get('/api/admin/profile', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT id, name, email, phone, role FROM users WHERE id = ? AND role = "admin"', [req.user.id]);
+        if (rows.length === 0) return res.status(404).json({ error: 'Admin not found' });
+        res.json(rows[0]);
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.put('/api/admin/profile', async (req, res) => {
+    const { name, email, phone } = req.body;
+    try {
+        // Check for duplicate email or phone in other accounts
+        const [existing] = await pool.query('SELECT id FROM users WHERE (email = ? OR phone = ?) AND id != ?', [email, phone, req.user.id]);
+        if (existing.length > 0) {
+            return res.status(400).json({ error: 'This email or phone number is already used by another account.' });
+        }
+        
+        await pool.query('UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ? AND role = "admin"', [name, email, phone, req.user.id]);
+        res.json({ success: true, message: 'Profile updated successfully' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
+app.put('/api/admin/password', async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    try {
+        const [rows] = await pool.query('SELECT password FROM users WHERE id = ? AND role = "admin"', [req.user.id]);
+        if (rows.length === 0) return res.status(404).json({ error: 'Admin not found' });
+        
+        const user = rows[0];
+        let isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch && currentPassword === user.password) {
+            isMatch = true; // Support legacy plain text passwords during migration
+        }
+
+        if (!isMatch) {
+            return res.status(401).json({ error: 'Current password is incorrect' });
+        }
+
+        const newHash = await bcrypt.hash(newPassword, 10);
+        await pool.query('UPDATE users SET password = ? WHERE id = ? AND role = "admin"', [newHash, req.user.id]);
+        res.json({ success: true, message: 'Password updated successfully' });
+    } catch (err) {
+        handleServerError(res, err);
+    }
+});
+
 app.get('/api/admin/users', async (req, res) => {
     try {
         const [rows] = await pool.query('SELECT id, name, email, phone, role, status, created_at FROM users ORDER BY created_at DESC');
