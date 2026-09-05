@@ -230,7 +230,7 @@ export default function Footer() {
         </div>
         <div className="border-t border-white/10 mt-12 pt-8 text-center text-xs text-gray-400">
           <p>© {new Date().getFullYear()} {settings.site_title || settings.store_name || 'Ghani'} - সর্বস্বত্ব সংরক্ষিত।</p>
-          <p>Developed by <a href="https://www.linkedin.com/company/intellix-lab/ ">Intellix Lab</a></p>
+ <p>Developed by <a href="https://www.linkedin.com/company/intellix-lab/" target="_blank" rel="noopener noreferrer">Intellix Lab</a></p>
         </div>
       </div>
     </footer>
